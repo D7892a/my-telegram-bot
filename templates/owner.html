@@ -35,11 +35,17 @@
           <article><span class="stat-icon blue">↗</span><p>طلبات اليوم</p><strong id="ownerStatTotal">0</strong><small>جميع طلبات اليوم</small></article>
           <article><span class="stat-icon green">✓</span><p>رحلات مكتملة</p><strong id="ownerStatCompleted">0</strong><small>تمت بنجاح</small></article>
           <article><span class="stat-icon orange">●</span><p>رحلات نشطة</p><strong id="ownerStatActive">0</strong><small>تحت المتابعة الآن</small></article>
+          <article><span class="stat-icon gold">≈</span><p>إيرادات اليوم</p><strong id="ownerStatRevenue">0</strong><small>أجور الرحلات المكتملة</small></article>
           <article><span class="stat-icon purple">♙</span><p>سائقون متصلون</p><strong id="ownerStatDrivers">0</strong><small>جاهزون للعمل</small></article>
+          <article><span class="stat-icon teal">👥</span><p>الزبائن المسجلون</p><strong id="ownerStatCustomers">0</strong><small>إجمالي حسابات الزبائن</small></article>
         </div>
         <div class="owner-grid">
           <section class="panel owner-panel"><div class="panel-header"><div><h3>طلبات تحتاج إجراء</h3><p>طلبات تسجيل سائقين بانتظار التدقيق</p></div><button class="refresh-button" data-go="applications">عرض الكل</button></div><div id="pendingPreview" class="pending-preview"></div></section>
           <aside class="panel security-card"><span>🛡️</span><h3>مركز الأمان</h3><p>راجع الهوية والصورة الحية وإجازة السوق بدقة قبل قبول أي سائق.</p><b>المستمسكات خاصة ومحمية</b></aside>
+        </div>
+        <div class="owner-grid owner-analytics">
+          <section class="panel owner-panel"><div class="panel-header"><div><h3>حركة آخر 7 أيام</h3><p>عدد الرحلات والإيرادات يومياً</p></div></div><div class="chart-bars" id="ownerWeeklyChart"></div></section>
+          <aside class="panel owner-panel"><div class="panel-header"><div><h3>أفضل الكباتن</h3><p>حسب الرحلات المكتملة</p></div></div><div id="ownerTopDrivers" class="top-drivers"></div></aside>
         </div>
       </section>
 
