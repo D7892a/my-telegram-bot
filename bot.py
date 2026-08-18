@@ -3,7 +3,7 @@ import os
 import secrets
 import sqlite3
 import threading
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from functools import wraps
 from pathlib import Path
 
@@ -109,6 +109,17 @@ def init_db():
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL,
                 FOREIGN KEY(driver_id) REFERENCES drivers(id)
+            );
+
+            CREATE TABLE IF NOT EXISTS ride_ratings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ride_id INTEGER NOT NULL UNIQUE,
+                user_id INTEGER NOT NULL,
+                driver_id INTEGER,
+                stars INTEGER NOT NULL CHECK(stars BETWEEN 1 AND 5),
+                comment TEXT DEFAULT '',
+                created_at TEXT NOT NULL,
+                FOREIGN KEY(ride_id) REFERENCES rides(id)
             );
             """
         )
@@ -442,7 +453,9 @@ def get_rides():
     requested_status = request.args.get("status")
     query = """
         SELECT rides.*, drivers.name AS driver_name, drivers.car AS driver_car,
-               drivers.plate AS driver_plate, drivers.phone AS driver_phone
+               drivers.plate AS driver_plate, drivers.phone AS driver_phone,
+               (SELECT stars FROM ride_ratings WHERE ride_ratings.ride_id = rides.id) AS my_rating,
+               (SELECT comment FROM ride_ratings WHERE ride_ratings.ride_id = rides.id) AS my_rating_comment
         FROM rides LEFT JOIN drivers ON rides.driver_id = drivers.id
     """
     conditions, params = [], []
@@ -469,7 +482,9 @@ def get_ride(ride_id):
             """
             SELECT rides.*, drivers.name AS driver_name, drivers.car AS driver_car,
                    drivers.plate AS driver_plate, drivers.phone AS driver_phone,
-                   drivers.rating AS driver_rating
+                   drivers.rating AS driver_rating,
+                   (SELECT stars FROM ride_ratings WHERE ride_ratings.ride_id = rides.id) AS my_rating,
+                   (SELECT comment FROM ride_ratings WHERE ride_ratings.ride_id = rides.id) AS my_rating_comment
             FROM rides LEFT JOIN drivers ON rides.driver_id = drivers.id
             WHERE rides.id = ?
             """,
@@ -480,6 +495,44 @@ def get_ride(ride_id):
     if user["role"] == "customer" and row["user_id"] != user["id"]:
         return jsonify(error="ليس لديك صلاحية لعرض هذا الطلب"), 403
     return jsonify(ride_to_dict(row))
+
+
+@app.post("/api/rides/<int:ride_id>/rate")
+@login_required("customer")
+def rate_ride(ride_id):
+    user = current_user()
+    data = request.get_json(silent=True) or {}
+    try:
+        stars = int(data.get("stars", 0))
+    except (TypeError, ValueError):
+        stars = 0
+    if stars not in range(1, 6):
+        return jsonify(error="يرجى اختيار تقييم من نجمة إلى خمس نجوم"), 400
+    comment = str(data.get("comment", "")).strip()[:300]
+    with db_connection() as db:
+        ride = db.execute("SELECT id, user_id, driver_id, status FROM rides WHERE id = ?", (ride_id,)).fetchone()
+        if not ride:
+            return jsonify(error="الطلب غير موجود"), 404
+        if ride["user_id"] != user["id"]:
+            return jsonify(error="ليس لديك صلاحية على هذا الطلب"), 403
+        if ride["status"] != "completed":
+            return jsonify(error="لا يمكن تقييم رحلة غير مكتملة"), 400
+        existing = db.execute("SELECT id FROM ride_ratings WHERE ride_id = ?", (ride_id,)).fetchone()
+        if existing:
+            return jsonify(error="قيمت هذه الرحلة مسبقاً"), 409
+        db.execute(
+            "INSERT INTO ride_ratings(ride_id, user_id, driver_id, stars, comment, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+            (ride_id, user["id"], ride["driver_id"], stars, comment, datetime.now(timezone.utc).isoformat()),
+        )
+        if ride["driver_id"]:
+            average = db.execute(
+                "SELECT AVG(stars) AS average FROM ride_ratings WHERE driver_id = ?",
+                (ride["driver_id"],),
+            ).fetchone()["average"]
+            if average is not None:
+                db.execute("UPDATE drivers SET rating = ROUND(?, 2) WHERE id = ?", (average, ride["driver_id"]))
+        db.commit()
+    return jsonify(message="شكراً لتقييمك، رأيك يساعدنا على تحسين الخدمة")
 
 
 @app.post("/api/rides")
@@ -540,13 +593,29 @@ def create_ride():
 @login_required()
 def update_ride(ride_id):
     user = current_user()
-    if user["role"] not in {"driver", "admin"}:
-        return jsonify(error="هذا الإجراء متاح للسائق أو الإدارة فقط"), 403
+    if user["role"] not in {"driver", "admin", "customer"}:
+        return jsonify(error="هذا الإجراء غير متاح لحسابك"), 403
     data = request.get_json(silent=True) or {}
     status = data.get("status")
     driver_id = data.get("driver_id")
     if status not in VALID_STATUSES:
         return jsonify(error="حالة الطلب غير صحيحة"), 400
+
+    if user["role"] == "customer":
+        # A customer can only cancel their own ride while it has not started yet.
+        if status != "cancelled":
+            return jsonify(error="تغيير حالة الرحلة متاح للسائق أو الإدارة فقط"), 403
+        with db_connection() as db:
+            ride = db.execute("SELECT user_id, status FROM rides WHERE id = ?", (ride_id,)).fetchone()
+            if not ride:
+                return jsonify(error="الطلب غير موجود"), 404
+            if ride["user_id"] != user["id"]:
+                return jsonify(error="ليس لديك صلاحية على هذا الطلب"), 403
+            if ride["status"] not in {"pending", "accepted"}:
+                return jsonify(error="لا يمكن إلغاء الرحلة في هذه المرحلة"), 400
+            db.execute("UPDATE rides SET status = 'cancelled', updated_at = ? WHERE id = ?", (datetime.now(timezone.utc).isoformat(), ride_id))
+            db.commit()
+        return get_ride(ride_id)
 
     if user["role"] == "driver":
         with db_connection() as db:
@@ -601,6 +670,67 @@ def update_driver(driver_id):
     return jsonify(id=driver_id, online=online)
 
 
+@app.get("/api/driver/me")
+@login_required("driver")
+def driver_me():
+    user = current_user()
+    with db_connection() as db:
+        application = db.execute(
+            "SELECT status, review_notes FROM driver_applications WHERE user_id = ?",
+            (user["id"],),
+        ).fetchone()
+        if not application or application["status"] != "approved":
+            return jsonify(error="حسابك ما زال بانتظار موافقة الإدارة"), 403
+        driver = db.execute("SELECT * FROM drivers WHERE user_id = ?", (user["id"],)).fetchone()
+        if not driver:
+            return jsonify(error="ملف السائق غير مفعل بعد، راجع الإدارة"), 403
+        today = datetime.now(timezone.utc).date().isoformat()
+        today_row = db.execute(
+            """SELECT COUNT(*) AS rides_today,
+                      COALESCE(SUM(price), 0) AS earnings_today
+               FROM rides WHERE driver_id = ? AND status = 'completed'
+               AND substr(updated_at, 1, 10) = ?""",
+            (driver["id"], today),
+        ).fetchone()
+        totals = db.execute(
+            """SELECT COUNT(*) AS total_rides,
+                      COALESCE(SUM(price), 0) AS total_earnings
+               FROM rides WHERE driver_id = ? AND status = 'completed'""",
+            (driver["id"],),
+        ).fetchone()
+        reviews = db.execute(
+            """SELECT ride_ratings.stars, ride_ratings.comment, ride_ratings.created_at, rides.id AS ride_id
+               FROM ride_ratings JOIN rides ON rides.id = ride_ratings.ride_id
+               WHERE ride_ratings.driver_id = ? ORDER BY ride_ratings.id DESC LIMIT 8""",
+            (driver["id"],),
+        ).fetchall()
+    return jsonify(
+        driver=dict(driver),
+        rides_today=today_row["rides_today"],
+        earnings_today=today_row["earnings_today"],
+        total_rides=totals["total_rides"],
+        total_earnings=totals["total_earnings"],
+        reviews=[dict(row) for row in reviews],
+    )
+
+
+@app.get("/api/customer/stats")
+@login_required("customer")
+def customer_stats():
+    user = current_user()
+    with db_connection() as db:
+        stats = db.execute(
+            """SELECT COUNT(*) AS total_rides,
+                      SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed_rides,
+                      SUM(CASE WHEN status IN ('pending','accepted','arriving','in_trip') THEN 1 ELSE 0 END) AS active_rides,
+                      COALESCE(SUM(CASE WHEN status = 'completed' THEN price ELSE 0 END), 0) AS total_spent
+               FROM rides WHERE user_id = ?""",
+            (user["id"],),
+        ).fetchone()
+    return jsonify(dict(stats))
+
+
+
 @app.get("/api/stats")
 @login_required("admin")
 def get_stats():
@@ -617,8 +747,31 @@ def get_stats():
             (today,),
         ).fetchone()
         online = db.execute("SELECT COUNT(*) AS count FROM drivers WHERE online = 1").fetchone()["count"]
+        customers = db.execute("SELECT COUNT(*) AS count FROM users WHERE role = 'customer'").fetchone()["count"]
+        average_rating = db.execute("SELECT ROUND(AVG(rating), 2) AS average FROM drivers").fetchone()["average"]
+        weekly = []
+        for offset in range(6, -1, -1):
+            target = datetime.now(timezone.utc).date() - timedelta(days=offset)
+            row = db.execute(
+                """SELECT COUNT(*) AS rides,
+                          COALESCE(SUM(CASE WHEN status = 'completed' THEN price ELSE 0 END), 0) AS revenue
+                   FROM rides WHERE substr(created_at, 1, 10) = ?""",
+                (target.isoformat(),),
+            ).fetchone()
+            weekly.append({"date": target.isoformat(), "rides": row["rides"], "revenue": row["revenue"]})
+        top_drivers = db.execute(
+            """SELECT drivers.name, drivers.car, drivers.rating,
+                      COUNT(rides.id) AS completed_rides,
+                      COALESCE(SUM(rides.price), 0) AS revenue
+               FROM drivers LEFT JOIN rides ON rides.driver_id = drivers.id AND rides.status = 'completed'
+               GROUP BY drivers.id ORDER BY completed_rides DESC, drivers.rating DESC LIMIT 5"""
+        ).fetchall()
     result = dict(stats)
     result["online_drivers"] = online
+    result["total_customers"] = customers
+    result["avg_driver_rating"] = average_rating
+    result["weekly"] = weekly
+    result["top_drivers"] = [dict(row) for row in top_drivers]
     return jsonify(result)
 
 

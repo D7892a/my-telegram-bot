@@ -20,6 +20,7 @@
     </a>
     <nav class="main-nav" aria-label="التنقل الرئيسي">
       <button class="nav-link active" data-view="customer">احجز مشوار</button>
+      <button class="nav-link" data-view="myrides">رحلاتي</button>
       <button class="nav-link" data-view="driver">للسائق</button>
       <a class="nav-link owner-link" href="/owner">إدارة المالك ↗</a>
     </nav>
@@ -106,9 +107,26 @@
       </section>
     </section>
 
+    <section class="view dashboard-view" id="myRidesView">
+      <div class="dashboard-heading">
+        <div><span class="eyebrow"><span></span> حسابك الشخصي</span><h2>رحلاتي</h2><p>تابع رحلاتك السابقة، ألغِ الطلب قبل انطلاق الكابتن، وقيم الخدمة.</p></div>
+        <span class="today-chip" id="myRidesDate"></span>
+      </div>
+      <div class="stats-grid">
+        <article><span class="stat-icon blue">↗</span><p>كل الرحلات</p><strong id="myStatTotal">0</strong><small>رحلاتك المسجلة</small></article>
+        <article><span class="stat-icon green">✓</span><p>رحلات مكتملة</p><strong id="myStatCompleted">0</strong><small>وصلت بسلام</small></article>
+        <article><span class="stat-icon orange">●</span><p>رحلات نشطة</p><strong id="myStatActive">0</strong><small>تحت المتابعة الآن</small></article>
+        <article><span class="stat-icon gold">≈</span><p>مجموع المصاريف</p><strong id="myStatSpent">0</strong><small>أجور الرحلات المكتملة</small></article>
+      </div>
+      <div class="panel admin-table-panel">
+        <div class="panel-header"><div><h3>سجل رحلاتي</h3><p>آخر 100 رحلة على حسابك</p></div><button class="refresh-button" id="refreshMyRides">↻ تحديث</button></div>
+        <div class="table-wrap"><table><thead><tr><th>الطلب</th><th>المسار</th><th>الكابتن</th><th>الأجرة</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody id="myRidesTable"></tbody></table></div>
+      </div>
+    </section>
+
     <section class="view dashboard-view" id="driverView">
       <div class="dashboard-heading">
-        <div><span class="eyebrow"><span></span> تطبيق الكابتن</span><h2>هلا بالكابتن حيدر 👋</h2><p>تابع الطلبات القريبة وابدأ شغلك.</p></div>
+        <div><span class="eyebrow"><span></span> تطبيق الكابتن</span><h2 id="driverGreeting">هلا بالكابتن 👋</h2><p>تابع الطلبات القريبة وابدأ شغلك.</p></div>
         <div class="driver-actions"><button class="outline-primary" id="driverApplyButton">تسجيل سائق جديد</button><label class="online-toggle"><span id="onlineLabel">متصل وتستقبل طلبات</span><input type="checkbox" id="driverOnline" checked><i></i></label></div>
       </div>
       <div class="driver-grid">
@@ -117,8 +135,9 @@
           <div id="driverRides" class="request-list"><div class="empty-state"><span>🚕</span><b>جاري تحميل الطلبات...</b></div></div>
         </div>
         <aside class="driver-sidebar">
-          <div class="wallet-card"><small>أرباح اليوم</small><strong>42,500 <i>د.ع</i></strong><div><span>5 رحلات مكتملة</span><b>+12% ↑</b></div></div>
-          <div class="panel profile-card"><div class="avatar">حج<span></span></div><h3>حيدر جاسم</h3><p>تويوتا كورولا · ذي قار 21 أ 4589</p><div class="rating">★ 4.9 <small>(124 رحلة)</small></div></div>
+          <div class="wallet-card"><small>أرباح اليوم</small><strong><span id="walletEarnings">0</span> <i>د.ع</i></strong><div><span id="walletRides">0 رحلات مكتملة</span><b id="walletTotal">كل الأرباح: 0 د.ع</b></div></div>
+          <div class="panel profile-card"><div class="avatar" id="driverAvatar">ك<span></span></div><h3 id="driverName">ملف الكابتن</h3><p id="driverVehicle">سجل دخولك كسائق لعرض ملفك</p><div class="rating" id="driverRating">★ 5.0 <small>(0 رحلة)</small></div></div>
+          <div class="panel reviews-card"><b>آخر التقييمات ⭐</b><div id="driverReviews"><small class="muted-note">ماكو تقييمات بعد</small></div></div>
           <div class="panel tips-card"><b>نصيحة اليوم 💡</b><p>أكثر الطلبات تكون بشارع الحبوبي بين الساعة 5 و8 مساءً.</p></div>
         </aside>
       </div>
@@ -133,7 +152,19 @@
         <article><span class="stat-icon blue">↗</span><p>طلبات اليوم</p><strong id="statTotal">0</strong><small>جميع الطلبات المسجلة</small></article>
         <article><span class="stat-icon green">✓</span><p>رحلات مكتملة</p><strong id="statCompleted">0</strong><small>تم توصيلها بنجاح</small></article>
         <article><span class="stat-icon orange">●</span><p>رحلات نشطة</p><strong id="statActive">0</strong><small>قيد التنفيذ الآن</small></article>
+        <article><span class="stat-icon gold">≈</span><p>إيرادات اليوم</p><strong id="statRevenue">0</strong><small>أجور الرحلات المكتملة</small></article>
         <article><span class="stat-icon purple">⌁</span><p>السائقون المتصلون</p><strong id="statDrivers">0</strong><small>جاهزون لاستلام طلب</small></article>
+        <article><span class="stat-icon teal">★</span><p>متوسط تقييم الكباتن</p><strong id="statRating">5.0</strong><small id="statCustomers">0 زبون مسجل</small></article>
+      </div>
+      <div class="admin-side-grid">
+        <div class="panel chart-panel">
+          <div class="panel-header"><div><h3>حركة آخر 7 أيام</h3><p>عدد الرحلات والإيرادات يومياً</p></div></div>
+          <div class="chart-bars" id="weeklyChart"></div>
+        </div>
+        <aside class="panel top-drivers-panel">
+          <div class="panel-header"><div><h3>أفضل الكباتن</h3><p>حسب الرحلات المكتملة</p></div></div>
+          <div id="topDrivers" class="top-drivers"></div>
+        </aside>
       </div>
       <div class="panel admin-table-panel">
         <div class="panel-header"><div><h3>آخر الرحلات</h3><p>تحديث مباشر لجميع الطلبات</p></div><button class="refresh-button" id="refreshAdmin">↻ تحديث</button></div>
@@ -201,6 +232,24 @@
         <label class="consent"><input type="checkbox" required> أتعهد أن جميع المعلومات والمستمسكات صحيحة وتخصني.</label>
         <button class="primary-button" type="submit"><span>إرسال طلب التسجيل</span><b>للتدقيق ←</b></button>
       </form>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="ratingModal" hidden>
+    <div class="auth-modal rating-modal">
+      <button class="modal-close" data-close="ratingModal">×</button>
+      <span class="eyebrow centered"><span></span> تقييم الرحلة</span>
+      <h2 id="ratingRideLabel">كيف كانت رحلتك؟</h2>
+      <p class="rating-driver-line" id="ratingDriverLine">مع الكابتن —</p>
+      <div class="rating-stars" id="ratingStars">
+        <button type="button" data-star="1" aria-label="نجمة واحدة">★</button>
+        <button type="button" data-star="2" aria-label="نجمتان">★</button>
+        <button type="button" data-star="3" aria-label="ثلاث نجوم">★</button>
+        <button type="button" data-star="4" aria-label="أربع نجوم">★</button>
+        <button type="button" data-star="5" aria-label="خمس نجوم">★</button>
+      </div>
+      <textarea id="ratingComment" placeholder="ملاحظتك عن الرحلة أو الكابتن (اختياري)"></textarea>
+      <button class="primary-button" id="submitRating"><span>إرسال التقييم</span><b>★</b></button>
     </div>
   </div>
 

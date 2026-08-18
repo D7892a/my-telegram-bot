@@ -28,9 +28,13 @@ $$('[data-owner-view]').forEach(button=>button.addEventListener('click',()=>swit
 $$('[data-go]').forEach(button=>button.addEventListener('click',()=>switchView(button.dataset.go)));
 
 async function loadAll(){await Promise.all([loadStats(),loadApplications(),loadRides()])}
+const shortMoney=number=>{const value=Number(number);if(value>=1000000)return`${(value/1000000).toFixed(1)} م`;if(value>=1000)return`${Math.round(value/1000)} ألف`;return`${value}`};
 async function loadStats(){
   const response=await fetch('/api/stats');if(response.status===401||response.status===403)return location.reload();
-  const stats=await response.json();$('#ownerStatTotal').textContent=stats.total_rides||0;$('#ownerStatCompleted').textContent=stats.completed||0;$('#ownerStatActive').textContent=stats.active||0;$('#ownerStatDrivers').textContent=stats.online_drivers||0;
+  const stats=await response.json();$('#ownerStatTotal').textContent=stats.total_rides||0;$('#ownerStatCompleted').textContent=stats.completed||0;$('#ownerStatActive').textContent=stats.active||0;$('#ownerStatDrivers').textContent=stats.online_drivers||0;$('#ownerStatRevenue').textContent=formatMoney(stats.revenue||0);$('#ownerStatCustomers').textContent=stats.total_customers||0;
+  const maxRides=Math.max(1,...(stats.weekly||[]).map(day=>day.rides||0));
+  $('#ownerWeeklyChart').innerHTML=(stats.weekly||[]).map(day=>{const height=Math.max(4,Math.round(((day.rides||0)/maxRides)*100));const label=new Intl.DateTimeFormat('ar-IQ',{weekday:'short'}).format(new Date(day.date+'T12:00:00'));return`<div class="chart-bar"><small>${shortMoney(day.revenue)}</small><i style="height:${height}%" title="${day.rides} رحلة · ${formatMoney(day.revenue)}"></i><b>${label}</b></div>`}).join('');
+  $('#ownerTopDrivers').innerHTML=(stats.top_drivers||[]).length?stats.top_drivers.map((driver,index)=>`<div class="top-driver"><span class="rank rank-${index+1}">${index+1}</span><div><b>${escapeHtml(driver.name)}</b><small>${driver.completed_rides||0} رحلة · ${escapeHtml(driver.car||'')}</small></div><span class="top-driver-rating">★ ${Number(driver.rating||5).toFixed(1)}</span></div>`).join(''):'<div class="empty-state"><span>🏁</span><b>ماكو رحلات بعد</b></div>';
 }
 async function loadApplications(){
   const response=await fetch('/api/admin/driver-applications');applications=await response.json();

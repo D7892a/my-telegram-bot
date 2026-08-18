@@ -18,6 +18,7 @@ $$('.nav-link[data-view]').forEach(button => button.addEventListener('click', ()
   $$('.view').forEach(view => view.classList.remove('active'));
   $(`#${button.dataset.view}View`).classList.add('active');
   if (button.dataset.view === 'customer') setTimeout(() => map.invalidateSize(), 80);
+  if (button.dataset.view === 'myrides') loadMyRides();
   if (button.dataset.view === 'driver') loadDriverRides();
   if (button.dataset.view === 'admin') loadAdmin();
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -178,7 +179,48 @@ $('#rideForm').addEventListener('submit', async event => {
 ['#closeModal','#trackButton'].forEach(selector => $(selector).addEventListener('click', () => $('#successModal').hidden = true));
 
 // Driver dashboard
+let driverProfile = null;
+
+async function loadDriverDashboard() {
+  try {
+    const response = await fetch('/api/driver/me');
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'سجل دخولك بحساب سائق');
+    driverProfile = data;
+    const driver = data.driver;
+    $('#driverGreeting').textContent = `هلا بالكابتن ${driver.name} 👋`;
+    $('#driverAvatar').textContent = driver.name.charAt(0);
+    $('#driverName').textContent = driver.name;
+    $('#driverVehicle').textContent = `${driver.car} · ${driver.plate}`;
+    $('#driverRating').innerHTML = `★ ${Number(driver.rating).toFixed(1)} <small>(${data.total_rides} رحلة مكتملة)</small>`;
+    $('#walletEarnings').textContent = Number(data.earnings_today).toLocaleString('ar-IQ');
+    $('#walletRides').textContent = `${data.rides_today} رحلات اليوم`;
+    $('#walletTotal').textContent = `كل الأرباح: ${Number(data.total_earnings).toLocaleString('ar-IQ')} د.ع`;
+    $('#driverReviews').innerHTML = data.reviews.length
+      ? data.reviews.map(review => `<div class="review-item"><span class="stars">${'★'.repeat(review.stars)}${'☆'.repeat(5 - review.stars)}</span>${review.comment ? `<p>${escapeHtml(review.comment)}</p>` : ''}<small>رحلة #${review.ride_id} · ${new Date(review.created_at).toLocaleDateString('ar-IQ')}</small></div>`).join('')
+      : '<small class="muted-note">ماكو تقييمات بعد — أول تقييم يوصلك هنا</small>';
+    const onlineToggle = $('#driverOnline');
+    onlineToggle.checked = !!driver.online;
+    onlineToggle.disabled = false;
+    $('#onlineLabel').textContent = driver.online ? 'متصل وتستقبل طلبات' : 'غير متصل';
+  } catch (error) {
+    driverProfile = null;
+    $('#driverGreeting').textContent = 'هلا بالكابتن 👋';
+    $('#driverAvatar').textContent = 'ك';
+    $('#driverName').textContent = 'ملف الكابتن';
+    $('#driverVehicle').textContent = 'سجل دخولك كسائق لعرض ملفك';
+    $('#driverRating').textContent = '★ —';
+    $('#walletEarnings').textContent = '0'; $('#walletRides').textContent = '—';
+    $('#walletTotal').textContent = 'كل الأرباح: —';
+    $('#driverReviews').innerHTML = '<small class="muted-note">ماكو تقييمات بعد</small>';
+    $('#driverOnline').disabled = true;
+    $('#driverRides').innerHTML = `<div class="empty-state"><span>🔐</span><b>${escapeHtml(error.message)}</b><small>سجل كسائق وانتظر موافقة الإدارة حتى تستقبل الطلبات</small></div>`;
+  }
+}
+
 async function loadDriverRides() {
+  await loadDriverDashboard();
+  if (!driverProfile) return;
   const container = $('#driverRides');
   try {
     const response = await fetch('/api/rides'); const rides = await response.json();
@@ -197,8 +239,10 @@ async function loadDriverRides() {
 }
 
 window.updateRide = async (id, status) => {
-  const response = await fetch(`/api/rides/${id}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ status, driver_id:1 }) });
-  if (response.ok) { showToast(status === 'accepted' ? 'تم قبول الطلب بنجاح' : 'تم تحديث الرحلة'); loadDriverRides(); }
+  const response = await fetch(`/api/rides/${id}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ status }) });
+  if (!response.ok) { const result = await response.json(); return showToast(result.error || 'تعذر تحديث الرحلة'); }
+  showToast(status === 'accepted' ? 'تم قبول الطلب بنجاح' : 'تم تحديث الرحلة');
+  loadDriverRides();
 };
 window.advanceRide = (id, status) => {
   const next = { accepted:'arriving', arriving:'in_trip', in_trip:'completed' }[status] || 'completed';
@@ -206,19 +250,35 @@ window.advanceRide = (id, status) => {
 };
 $('#refreshRides').addEventListener('click', loadDriverRides);
 $('#driverOnline').addEventListener('change', async event => {
-  await fetch('/api/drivers/1', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({online:event.target.checked}) });
+  if (!driverProfile) { event.target.checked = false; return showToast('سجل دخولك كسائق أولاً'); }
+  const driverId = driverProfile.driver.id;
+  const response = await fetch(`/api/drivers/${driverId}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({online:event.target.checked}) });
+  if (!response.ok) { const result = await response.json(); event.target.checked = !event.target.checked; return showToast(result.error || 'تعذر التحديث'); }
   $('#onlineLabel').textContent = event.target.checked ? 'متصل وتستقبل طلبات' : 'غير متصل';
   showToast(event.target.checked ? 'أنت متصل الآن' : 'تم إيقاف استقبال الطلبات');
 });
 
 // Admin dashboard
 const escapeHtml = text => String(text ?? '').replace(/[&<>'"]/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
+const shortMoney = number => {
+  const value = Number(number);
+  if (value >= 1000000) return `${(value / 1000000).toFixed(1)} م`;
+  if (value >= 1000) return `${Math.round(value / 1000)} ألف`;
+  return `${value}`;
+};
 async function loadAdmin() {
   try {
     const [statsResponse, ridesResponse] = await Promise.all([fetch('/api/stats'), fetch('/api/rides')]);
     const stats = await statsResponse.json(), rides = await ridesResponse.json();
     $('#statTotal').textContent = stats.total_rides || 0; $('#statCompleted').textContent = stats.completed || 0;
     $('#statActive').textContent = stats.active || 0; $('#statDrivers').textContent = stats.online_drivers || 0;
+    $('#statRevenue').textContent = formatMoney(stats.revenue || 0);
+    $('#statRating').textContent = stats.avg_driver_rating ? Number(stats.avg_driver_rating).toFixed(1) : '—';
+    $('#statCustomers').textContent = `${stats.total_customers || 0} زبون مسجل`;
+    renderWeeklyChart(stats.weekly || [], $('#weeklyChart'));
+    $('#topDrivers').innerHTML = (stats.top_drivers || []).length
+      ? stats.top_drivers.map((driver, index) => `<div class="top-driver"><span class="rank rank-${index + 1}">${index + 1}</span><div><b>${escapeHtml(driver.name)}</b><small>${driver.completed_rides || 0} رحلة · ${escapeHtml(driver.car || '')}</small></div><span class="top-driver-rating">★ ${Number(driver.rating || 5).toFixed(1)}</span></div>`).join('')
+      : '<div class="empty-state"><span>🏁</span><b>ماكو رحلات بعد</b></div>';
     $('#ridesTable').innerHTML = rides.length ? rides.map(ride => `<tr>
       <td><b>#${ride.id}</b><small>${new Date(ride.created_at).toLocaleTimeString('ar-IQ',{hour:'2-digit',minute:'2-digit'})}</small></td>
       <td>${escapeHtml(ride.rider_name)}<small>${escapeHtml(ride.phone)}</small></td>
@@ -229,6 +289,15 @@ async function loadAdmin() {
 }
 $('#refreshAdmin').addEventListener('click', loadAdmin);
 $('#todayDate').textContent = new Intl.DateTimeFormat('ar-IQ', { weekday:'long', day:'numeric', month:'long' }).format(new Date());
+
+function renderWeeklyChart(weekly, container) {
+  const maxRides = Math.max(1, ...weekly.map(day => day.rides || 0));
+  container.innerHTML = weekly.map(day => {
+    const height = Math.max(4, Math.round(((day.rides || 0) / maxRides) * 100));
+    const label = new Intl.DateTimeFormat('ar-IQ', { weekday: 'short' }).format(new Date(day.date + 'T12:00:00'));
+    return `<div class="chart-bar"><small>${shortMoney(day.revenue)}</small><i style="height:${height}%" title="${day.rides} رحلة · ${formatMoney(day.revenue)}"></i><b>${label}</b></div>`;
+  }).join('');
+}
 
 // Accounts and driver onboarding
 async function loadAuth() {
@@ -305,6 +374,78 @@ $('#driverApplicationForm').addEventListener('submit', async event => {
     $('#driverModal').hidden = true; form.reset(); await loadAuth(); showToast('تم إرسال الطلب، راح نبلغك بعد التدقيق');
   } catch (error) { showToast(error.message || 'تعذر رفع الطلب'); }
   finally { button.disabled = false; button.querySelector('span').textContent = 'إرسال طلب التسجيل'; }
+});
+
+// My rides (customer history) + rating
+async function loadMyRides() {
+  if (!authState.authenticated) {
+    $('#authModal').hidden = false;
+    return showToast('سجل دخولك حتى تشوف رحلاتك');
+  }
+  if (authState.user.role !== 'customer') return showToast('سجل الرحلات متاح لحساب الزبون فقط');
+  try {
+    const [statsResponse, ridesResponse] = await Promise.all([fetch('/api/customer/stats'), fetch('/api/rides')]);
+    const stats = await statsResponse.json(), rides = await ridesResponse.json();
+    $('#myStatTotal').textContent = stats.total_rides || 0;
+    $('#myStatCompleted').textContent = stats.completed_rides || 0;
+    $('#myStatActive').textContent = stats.active_rides || 0;
+    $('#myStatSpent').textContent = formatMoney(stats.total_spent || 0);
+    $('#myRidesTable').innerHTML = rides.length ? rides.map(ride => {
+      const date = new Date(ride.created_at).toLocaleString('ar-IQ', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+      let action = '';
+      if (['pending','accepted'].includes(ride.status)) action = `<button class="cancel-button" onclick="cancelRide(${ride.id})">إلغاء</button>`;
+      else if (ride.status === 'completed' && !ride.my_rating) action = `<button class="rate-button" onclick="openRating(${ride.id}, '${escapeHtml(ride.driver_name || 'غير محدد')}')">★ تقييم</button>`;
+      else if (ride.status === 'completed') action = `<span class="rated-stars" title="${escapeHtml(ride.my_rating_comment || '')}">${'★'.repeat(ride.my_rating)}</span>`;
+      else action = '<small class="muted-note">—</small>';
+      return `<tr>
+        <td><b>#${ride.id}</b><small>${date}</small></td>
+        <td>${escapeHtml(ride.pickup_name)}<small>إلى ${escapeHtml(ride.dropoff_name)}</small></td>
+        <td>${escapeHtml(ride.driver_name || 'غير محدد')}<small>${escapeHtml(ride.driver_car || '')}</small></td>
+        <td><b>${formatMoney(ride.price)}</b></td>
+        <td><span class="status-badge status-${ride.status}">${ride.status_label}</span></td>
+        <td>${action}</td></tr>`;
+    }).join('') : '<tr><td colspan="6"><div class="empty-state"><span>🚕</span><b>ماكو رحلات بعد</b><small>اطلب أول مشوار وراح يظهر هنا</small></div></td></tr>';
+  } catch { showToast('تعذر تحميل سجل الرحلات'); }
+}
+$('#refreshMyRides').addEventListener('click', loadMyRides);
+$('#myRidesDate').textContent = new Intl.DateTimeFormat('ar-IQ', { weekday:'long', day:'numeric', month:'long' }).format(new Date());
+
+window.cancelRide = async id => {
+  if (!confirm('متأكد تريد إلغاء الرحلة؟')) return;
+  const response = await fetch(`/api/rides/${id}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ status:'cancelled' }) });
+  const result = await response.json();
+  if (!response.ok) return showToast(result.error || 'تعذر إلغاء الرحلة');
+  showToast('تم إلغاء الرحلة'); loadMyRides();
+};
+
+let ratingRideId = null, ratingStarsValue = 0;
+window.openRating = (rideId, driverName) => {
+  ratingRideId = rideId; ratingStarsValue = 0;
+  $('#ratingRideLabel').textContent = `كيف كانت رحلتك؟`;
+  $('#ratingDriverLine').textContent = `مع الكابتن ${driverName}`;
+  $('#ratingComment').value = '';
+  $$('#ratingStars button').forEach(button => button.classList.remove('active'));
+  $('#ratingModal').hidden = false;
+};
+$$('#ratingStars button').forEach(button => button.addEventListener('click', () => {
+  ratingStarsValue = Number(button.dataset.star);
+  $$('#ratingStars button').forEach(item => item.classList.toggle('active', Number(item.dataset.star) <= ratingStarsValue));
+}));
+$('#submitRating').addEventListener('click', async () => {
+  if (!ratingStarsValue) return showToast('اختار عدد النجوم أولاً');
+  const button = $('#submitRating'); button.disabled = true;
+  try {
+    const response = await fetch(`/api/rides/${ratingRideId}/rate`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ stars: ratingStarsValue, comment: $('#ratingComment').value })
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'تعذر إرسال التقييم');
+    $('#ratingModal').hidden = true;
+    showToast(result.message);
+    loadMyRides();
+  } catch (error) { showToast(error.message); }
+  finally { button.disabled = false; }
 });
 
 loadAuth();
