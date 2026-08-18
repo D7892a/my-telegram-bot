@@ -1,0 +1,1895 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>تكسي دجلة | Dijla Taxi - خدمة النقل الذكية في بغداد</title>
+  <meta name="description" content="خدمة تكسي ذكية في بغداد مع سائقين معتمدين وأسعار شفافة" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="css/main.css" />
+</head>
+<body>
+
+  <!-- شاشة التحميل -->
+  <div id="splash" class="splash">
+    <div class="splash-inner">
+      <div class="splash-car">
+        <div class="splash-circle"><i class="fa-solid fa-taxi"></i></div>
+        <div class="splash-road"></div>
+      </div>
+      <h1>تكسي دجلة</h1>
+      <p class="splash-sub">منصة النقل الذكية في بغداد</p>
+      <div class="splash-loader"></div>
+    </div>
+  </div>
+
+  <!-- التطبيق -->
+  <div id="app" class="app hidden">
+
+    <!-- ========== الصفحة الترحيبية ========== -->
+    <section id="landingPage" class="page active">
+      <div class="landing-bg">
+        <div class="bg-blob blob-1"></div>
+        <div class="bg-blob blob-2"></div>
+      </div>
+
+      <nav class="landing-nav">
+        <div class="brand">
+          <div class="brand-icon"><i class="fa-solid fa-taxi"></i></div>
+          <div>
+            <h1>تكسي دجلة</h1>
+            <span>DIJLA TAXI</span>
+          </div>
+        </div>
+        <div class="nav-links">
+          <a onclick="showPage('landingPage')" class="active">الرئيسية</a>
+          <a onclick="showPage('aboutPage')">عن التطبيق</a>
+          <a onclick="showPage('contactPage')">اتصل بنا</a>
+        </div>
+        <button class="btn-primary" onclick="openAuth('login')">
+          <i class="fa-solid fa-right-to-bracket"></i> دخول
+        </button>
+      </nav>
+
+      <div class="hero">
+        <div class="hero-text">
+          <div class="hero-badge">
+            <i class="fa-solid fa-bolt"></i> المنصة الأذكى في بغداد
+          </div>
+          <h1>رحلتك القادمة <span class="gradient-text">تصير أسهل</span> وأسرع</h1>
+          <p>اطلب تكسي بأمان وراحة مع سائقين معتمدين على مدار الساعة. تتبع رحلتك مباشرة، ادفع بكل سهولة، واحصل على تجربة نقل لا تُنسى.</p>
+          <div class="hero-buttons">
+            <button class="btn-primary big" onclick="openAuth('register','customer')">
+              ابدأ الآن <i class="fa-solid fa-arrow-left"></i>
+            </button>
+            <button class="btn-outline" onclick="openAuth('login')">
+              <i class="fa-solid fa-play"></i> شاهد كيف يعمل
+            </button>
+          </div>
+          <div class="hero-stats">
+            <div><strong>+50,000</strong><span>زبون سعيد</span></div>
+            <div><strong>+3,200</strong><span>سائق معتمد</span></div>
+            <div><strong>+200K</strong><span>رحلة مكتملة</span></div>
+          </div>
+        </div>
+
+        <div class="hero-visual">
+          <div class="phone-mockup">
+            <div class="phone-notch"></div>
+            <div class="phone-screen">
+              <div class="mini-map">
+                <div class="mini-map-bg"></div>
+                <div class="mini-route"></div>
+                <div class="mini-marker from"></div>
+                <div class="mini-marker to"></div>
+                <div class="mini-car"></div>
+              </div>
+              <div class="mini-info">
+                <div class="mini-driver">
+                  <div class="mini-avatar">ك</div>
+                  <div>
+                    <strong>كريم عبدالله</strong>
+                    <span><i class="fa-solid fa-star"></i> 4.9</span>
+                  </div>
+                </div>
+                <div class="mini-fare">8,500 <small>د.ع</small></div>
+              </div>
+            </div>
+          </div>
+          <div class="floating-card card-1">
+            <i class="fa-solid fa-shield-halved"></i>
+            <span>سائقون معتمدون</span>
+          </div>
+          <div class="floating-card card-2">
+            <i class="fa-solid fa-clock"></i>
+            <span>متاح 24/7</span>
+          </div>
+          <div class="floating-card card-3">
+            <i class="fa-solid fa-money-bill-wave"></i>
+            <span>أسعار شفافة</span>
+          </div>
+        </div>
+      </div>
+
+      <section class="features-section">
+        <div class="section-head">
+          <span class="section-tag">المميزات</span>
+          <h2>ليش تختار <span class="gradient-text">تكسي دجلة؟</span></h2>
+          <p>نقدم لك تجربة نقل متكاملة بأحدث التقنيات وأفضل السائقين</p>
+        </div>
+
+        <div class="features-grid">
+          <div class="feature-card">
+            <div class="feature-icon icon-blue"><i class="fa-solid fa-map-location-dot"></i></div>
+            <h3>تتبع مباشر</h3>
+            <p>تابع موقع سائقك و رحلتك على الخريطة لحظة بلحظة</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon icon-yellow"><i class="fa-solid fa-shield-halved"></i></div>
+            <h3>أمان وثقة</h3>
+            <p>جميع سائقينا موثقون و مجازون من قبل الجهات الرسمية</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon icon-green"><i class="fa-solid fa-tag"></i></div>
+            <h3>أسعار شفافة</h3>
+            <p>اعرف السعر قبل ما تطلب بدون أي رسوم مخفية</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon icon-purple"><i class="fa-solid fa-wallet"></i></div>
+            <h3>محفظة ذكية</h3>
+            <p>ادفع كاش، بالبطاقة، أو من محفظتك الإلكترونية</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon icon-pink"><i class="fa-solid fa-star"></i></div>
+            <h3>تقييمات حقيقية</h3>
+            <p>قيّم تجربتك و ساعدنا بتحسين الخدمة للجميع</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon icon-orange"><i class="fa-solid fa-headset"></i></div>
+            <h3>دعم 24/7</h3>
+            <p>فريق دعم متاح على مدار الساعة لمساعدتك</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="cta-section">
+        <div class="cta-bg">
+          <div class="cta-blob"></div>
+        </div>
+        <div class="cta-content">
+          <h2>جاهز لرحلتك القادمة؟</h2>
+          <p>حمّل التطبيق أو سجّل الآن و احصل على أول 3 رحلات بنصف السعر!</p>
+          <div class="cta-buttons">
+            <button class="btn-primary big" onclick="openAuth('register','customer')">
+              <i class="fa-solid fa-user-plus"></i> سجّل كزبون
+            </button>
+            <button class="btn-outline white" onclick="openAuth('register','driver')">
+              <i class="fa-solid fa-id-card"></i> انضم كسائق
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <footer class="landing-footer">
+        <div class="footer-grid">
+          <div>
+            <div class="brand">
+              <div class="brand-icon"><i class="fa-solid fa-taxi"></i></div>
+              <div>
+                <h3>تكسي دجلة</h3>
+                <span>DIJLA TAXI</span>
+              </div>
+            </div>
+            <p>منصة النقل الذكية الأولى في بغداد، نوصلك بأمان و راحة.</p>
+          </div>
+          <div>
+            <h4>روابط سريعة</h4>
+            <ul>
+              <li><a onclick="showPage('landingPage')">الرئيسية</a></li>
+              <li><a onclick="showPage('aboutPage')">عن التطبيق</a></li>
+              <li><a onclick="showPage('contactPage')">اتصل بنا</a></li>
+              <li><a onclick="openAuth('login')">دخول</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4>خدماتنا</h4>
+            <ul>
+              <li><a>تكسي اقتصادي</a></li>
+              <li><a>تكسي بريميوم</a></li>
+              <li><a>تكسي عائلي</a></li>
+              <li><a>توصيل الطلبات</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4>تواصل معنا</h4>
+            <ul>
+              <li><i class="fa-solid fa-phone"></i> +964 770 123 4567</li>
+              <li><i class="fa-solid fa-envelope"></i> info@dijla-taxi.iq</li>
+              <li><i class="fa-solid fa-location-dot"></i> الكرادة، بغداد</li>
+            </ul>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <p>© 2026 تكسي دجلة. جميع الحقوق محفوظة.</p>
+          <div class="social-links">
+            <a><i class="fa-brands fa-facebook"></i></a>
+            <a><i class="fa-brands fa-instagram"></i></a>
+            <a><i class="fa-brands fa-twitter"></i></a>
+            <a><i class="fa-brands fa-tiktok"></i></a>
+          </div>
+        </div>
+      </footer>
+    </section>
+
+    <!-- ========== صفحة عن التطبيق ========== -->
+    <section id="aboutPage" class="page">
+      <nav class="simple-nav">
+        <button class="back-btn" onclick="showPage('landingPage')"><i class="fa-solid fa-arrow-right"></i></button>
+        <h2>عن تكسي دجلة</h2>
+        <div></div>
+      </nav>
+
+      <div class="about-content">
+        <div class="about-hero">
+          <div class="big-logo"><i class="fa-solid fa-taxi"></i></div>
+          <h1>تكسي دجلة</h1>
+          <p>منصة النقل الذكية الأولى في بغداد</p>
+        </div>
+
+        <div class="info-grid">
+          <div class="info-card">
+            <div class="info-icon"><i class="fa-solid fa-bullseye"></i></div>
+            <h3>رسالتنا</h3>
+            <p>توفير خدمة نقل آمنة، مريحة، و موثوقة لكل مواطن في بغداد بأسعار عادلة و تقنيات حديثة.</p>
+          </div>
+          <div class="info-card">
+            <div class="info-icon"><i class="fa-solid fa-eye"></i></div>
+            <h3>رؤيتنا</h3>
+            <p>أن نكون الخيار الأول لكل رحلة في العراق، و نُساهم في تطوير قطاع النقل الذكي.</p>
+          </div>
+          <div class="info-card">
+            <div class="info-icon"><i class="fa-solid fa-handshake"></i></div>
+            <h3>قيمنا</h3>
+            <ul>
+              <li><i class="fa-solid fa-check"></i> الأمانة و النزاهة</li>
+              <li><i class="fa-solid fa-check"></i> راحة الزبون أولاً</li>
+              <li><i class="fa-solid fa-check"></i> الشفافية في الأسعار</li>
+              <li><i class="fa-solid fa-check"></i> احترام السائقين</li>
+            </ul>
+          </div>
+          <div class="info-card">
+            <div class="info-icon"><i class="fa-solid fa-chart-line"></i></div>
+            <h3>أرقامنا</h3>
+            <div class="stats-mini">
+              <div><strong>+50K</strong><span>زبون</span></div>
+              <div><strong>+3K</strong><span>سائق</span></div>
+              <div><strong>+200K</strong><span>رحلة</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== صفحة الاتصال ========== -->
+    <section id="contactPage" class="page">
+      <nav class="simple-nav">
+        <button class="back-btn" onclick="showPage('landingPage')"><i class="fa-solid fa-arrow-right"></i></button>
+        <h2>اتصل بنا</h2>
+        <div></div>
+      </nav>
+
+      <div class="contact-content">
+        <div class="contact-info">
+          <h2>نسعد بتواصلك</h2>
+          <p>فريقنا جاهز للإجابة على أسئلتك و استفساراتك على مدار الساعة</p>
+
+          <div class="contact-list">
+            <div class="contact-item">
+              <i class="fa-solid fa-phone"></i>
+              <div>
+                <strong>اتصل بنا</strong>
+                <span>+964 770 123 4567</span>
+              </div>
+            </div>
+            <div class="contact-item">
+              <i class="fa-solid fa-envelope"></i>
+              <div>
+                <strong>البريد الإلكتروني</strong>
+                <span>info@dijla-taxi.iq</span>
+              </div>
+            </div>
+            <div class="contact-item">
+              <i class="fa-solid fa-location-dot"></i>
+              <div>
+                <strong>العنوان</strong>
+                <span>الكرادة، بغداد، العراق</span>
+              </div>
+            </div>
+            <div class="contact-item">
+              <i class="fa-solid fa-clock"></i>
+              <div>
+                <strong>ساعات العمل</strong>
+                <span>24/7 - متاحون دائماً</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <form class="contact-form" onsubmit="submitContact(event)">
+          <h3>أرسل رسالة</h3>
+          <div class="form-group">
+            <label>الاسم الكامل</label>
+            <input type="text" required placeholder="اسمك الكريم" />
+          </div>
+          <div class="form-group">
+            <label>البريد الإلكتروني</label>
+            <input type="email" required placeholder="email@example.com" />
+          </div>
+          <div class="form-group">
+            <label>الموضوع</label>
+            <select>
+              <option>استفسار عام</option>
+              <option>مشكلة في التطبيق</option>
+              <option>مشكلة في الدفع</option>
+              <option>اقتراح</option>
+              <option>شكوى</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>الرسالة</label>
+            <textarea rows="5" required placeholder="اكتب رسالتك هنا..."></textarea>
+          </div>
+          <button type="submit" class="btn-primary">
+            <i class="fa-solid fa-paper-plane"></i> إرسال الرسالة
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ========== صفحة تسجيل الدخول / إنشاء حساب ========== -->
+    <section id="authPage" class="page">
+      <nav class="simple-nav">
+        <button class="back-btn" onclick="showPage('landingPage')"><i class="fa-solid fa-arrow-right"></i></button>
+        <h2 id="authTitle">تسجيل الدخول</h2>
+        <div></div>
+      </nav>
+
+      <div class="auth-container">
+        <div class="auth-card">
+          <div class="auth-tabs">
+            <button class="auth-tab active" data-tab="login">دخول</button>
+            <button class="auth-tab" data-tab="register">حساب جديد</button>
+          </div>
+
+          <!-- خيارات نوع الحساب للتسجيل -->
+          <div id="registerTypeSelector" class="role-selector hidden">
+            <p class="selector-label">اختر نوع حسابك:</p>
+            <div class="role-options">
+              <button class="role-option" data-role="customer">
+                <div class="role-opt-icon icon-blue"><i class="fa-solid fa-user"></i></div>
+                <strong>زبون</strong>
+                <span>أطلب تكسي و تابع رحلتك</span>
+              </button>
+              <button class="role-option" data-role="driver">
+                <div class="role-opt-icon icon-yellow"><i class="fa-solid fa-id-card"></i></div>
+                <strong>سائق</strong>
+                <span>انضم إلينا و ابدأ بتحقيق الدخل</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- نموذج تسجيل الدخول -->
+          <form id="loginForm" class="auth-form">
+            <div class="form-group">
+              <label><i class="fa-solid fa-envelope"></i> البريد الإلكتروني</label>
+              <input type="email" id="loginEmail" required placeholder="example@mail.com" />
+            </div>
+            <div class="form-group">
+              <label><i class="fa-solid fa-lock"></i> كلمة المرور</label>
+              <input type="password" id="loginPassword" required placeholder="••••••••" />
+            </div>
+            <div class="form-extras">
+              <label class="checkbox">
+                <input type="checkbox" /> <span>تذكرني</span>
+              </label>
+              <a>نسيت كلمة المرور؟</a>
+            </div>
+            <button type="submit" class="btn-primary full">
+              <i class="fa-solid fa-right-to-bracket"></i> دخول
+            </button>
+            <div class="demo-section">
+              <p class="demo-label"><i class="fa-solid fa-flask"></i> حسابات تجريبية للتجربة:</p>
+              <div class="demo-buttons">
+                <button type="button" onclick="quickLogin('customer')" class="demo-btn">
+                  <i class="fa-solid fa-user"></i> زبون
+                </button>
+                <button type="button" onclick="quickLogin('driver')" class="demo-btn">
+                  <i class="fa-solid fa-id-card"></i> سائق
+                </button>
+                <button type="button" onclick="quickLogin('admin')" class="demo-btn">
+                  <i class="fa-solid fa-shield"></i> أدمن
+                </button>
+              </div>
+            </div>
+          </form>
+
+          <!-- نموذج إنشاء حساب -->
+          <form id="registerForm" class="auth-form hidden">
+            <input type="hidden" id="registerRole" value="customer" />
+
+            <div class="form-row">
+              <div class="form-group">
+                <label><i class="fa-solid fa-user"></i> الاسم الأول</label>
+                <input type="text" id="regFirstName" required placeholder="أحمد" />
+              </div>
+              <div class="form-group">
+                <label><i class="fa-solid fa-user"></i> اسم العائلة</label>
+                <input type="text" id="regLastName" required placeholder="محمد" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label><i class="fa-solid fa-envelope"></i> البريد الإلكتروني</label>
+              <input type="email" id="regEmail" required placeholder="example@mail.com" />
+            </div>
+
+            <div class="form-group">
+              <label><i class="fa-solid fa-phone"></i> رقم الهاتف</label>
+              <input type="tel" id="regPhone" required placeholder="07XX XXX XXXX" />
+            </div>
+
+            <div class="form-group">
+              <label><i class="fa-solid fa-lock"></i> كلمة المرور</label>
+              <input type="password" id="regPassword" required placeholder="6 أحرف على الأقل" minlength="6" />
+            </div>
+
+            <!-- حقول خاصة بالسائق -->
+            <div id="driverFields" class="hidden">
+              <div class="divider"><span>بيانات السيارة</span></div>
+
+              <div class="form-group">
+                <label><i class="fa-solid fa-car"></i> نوع السيارة</label>
+                <select id="regCarType">
+                  <option value="economy">سيدان (اقتصادي)</option>
+                  <option value="comfort">كومفورت</option>
+                  <option value="premium">بريميوم</option>
+                  <option value="van">فان / عائلية</option>
+                </select>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label><i class="fa-solid fa-car-side"></i> موديل السيارة</label>
+                  <input type="text" id="regCarModel" placeholder="تويوتا كامري 2022" />
+                </div>
+                <div class="form-group">
+                  <label><i class="fa-solid fa-id-card"></i> رقم اللوحة</label>
+                  <input type="text" id="regPlate" placeholder="12-345-أ ب" />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label><i class="fa-solid fa-file-lines"></i> رقم رخصة القيادة</label>
+                <input type="text" id="regLicense" placeholder="IQ-2024-XXXX" />
+              </div>
+
+              <div class="divider"><span>الوثائق المطلوبة</span></div>
+
+              <div class="upload-grid">
+                <div class="upload-box" onclick="mockUpload(this,'هوية الأحوال المدنية')">
+                  <i class="fa-solid fa-id-badge"></i>
+                  <span>هوية الأحوال</span>
+                  <small>اضغط لرفع</small>
+                </div>
+                <div class="upload-box" onclick="mockUpload(this,'رخصة القيادة')">
+                  <i class="fa-solid fa-file-lines"></i>
+                  <span>رخصة القيادة</span>
+                  <small>اضغط لرفع</small>
+                </div>
+                <div class="upload-box" onclick="mockUpload(this,'إسناد السيارة')">
+                  <i class="fa-solid fa-file-contract"></i>
+                  <span>إسناد السيارة</span>
+                  <small>اضغط لرفع</small>
+                </div>
+                <div class="upload-box" onclick="mockUpload(this,'التأمين')">
+                  <i class="fa-solid fa-shield"></i>
+                  <span>بوليصة التأمين</span>
+                  <small>اضغط لرفع</small>
+                </div>
+              </div>
+
+              <div class="info-box">
+                <i class="fa-solid fa-info-circle"></i>
+                <span>سيتم مراجعة طلبك من قبل الإدارة خلال 24 ساعة و إبلاغك بالنتيجة</span>
+              </div>
+            </div>
+
+            <label class="checkbox">
+              <input type="checkbox" required /> <span>أوافق على <a>الشروط و الأحكام</a></span>
+            </label>
+
+            <button type="submit" class="btn-primary full">
+              <i class="fa-solid fa-user-plus"></i> إنشاء الحساب
+            </button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== لوحة تحكم الزبون ========== -->
+    <section id="customerApp" class="page dashboard">
+      <header class="dash-header customer-header">
+        <div class="dash-user">
+          <div class="user-avatar" id="custAvatar">أ</div>
+          <div>
+            <strong id="custName">أحمد محمد</strong>
+            <span class="user-meta">
+              <i class="fa-solid fa-star"></i> <span id="custRating">4.9</span>
+              <span class="dot-sep">•</span>
+              <span id="custTrips">45 رحلة</span>
+            </span>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button class="header-icon" onclick="openNotifications()">
+            <i class="fa-solid fa-bell"></i>
+            <span class="badge-dot" id="custNotifDot"></span>
+          </button>
+          <button class="header-icon" onclick="openWallet()">
+            <i class="fa-solid fa-wallet"></i>
+          </button>
+          <button class="header-icon" onclick="logout()">
+            <i class="fa-solid fa-right-from-bracket"></i>
+          </button>
+        </div>
+      </header>
+
+      <div class="dash-content">
+        <!-- ============== الرئيسية ============== -->
+        <div class="dash-tab active" id="custHome">
+          <div class="welcome-bar">
+            <div>
+              <h2>أهلاً، <span id="greetName">أحمد</span> 👋</h2>
+              <p>وين تبي توصلك اليوم؟</p>
+            </div>
+            <div class="quick-balance" onclick="openWallet()">
+              <span>الرصيد</span>
+              <strong id="quickBalance">25,000 <small>د.ع</small></strong>
+            </div>
+          </div>
+
+          <!-- خريطة كبيرة -->
+          <div class="big-map-card">
+            <div id="customerMap" class="big-map"></div>
+            <div class="map-controls">
+              <button class="map-fab" onclick="locateMe()">
+                <i class="fa-solid fa-location-crosshairs"></i>
+              </button>
+            </div>
+            <div class="map-search">
+              <i class="fa-solid fa-search"></i>
+              <input type="text" id="placeSearch" placeholder="ابحث عن مكان (مثال: الكرادة، المنصور...)" />
+              <button class="search-btn" onclick="searchPlace()">
+                <i class="fa-solid fa-arrow-left"></i>
+              </button>
+            </div>
+            <div id="searchResults" class="search-results hidden"></div>
+          </div>
+
+          <!-- الإحصائيات السريعة -->
+          <div class="quick-stats">
+            <div class="qs-item">
+              <i class="fa-solid fa-route icon-yellow"></i>
+              <div>
+                <span>رحلاتك</span>
+                <strong id="totalTripsCount">45</strong>
+              </div>
+            </div>
+            <div class="qs-item">
+              <i class="fa-solid fa-coins icon-green"></i>
+              <div>
+                <span>المنفق</span>
+                <strong>320K</strong>
+              </div>
+            </div>
+            <div class="qs-item">
+              <i class="fa-solid fa-ticket icon-blue"></i>
+              <div>
+                <span>كوبونات</span>
+                <strong>3</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- الأماكن السريعة -->
+          <div class="section-block">
+            <div class="block-head">
+              <h3><i class="fa-solid fa-star"></i> أماكنك المفضلة</h3>
+              <button class="text-btn">إدارة</button>
+            </div>
+            <div class="places-grid" id="savedPlacesGrid"></div>
+          </div>
+
+          <!-- العروض -->
+          <div class="section-block">
+            <div class="block-head">
+              <h3><i class="fa-solid fa-fire"></i> عروض حصرية</h3>
+              <button class="text-btn">عرض الكل</button>
+            </div>
+            <div class="promos-scroll">
+              <div class="promo-card promo-yellow">
+                <div class="promo-icon"><i class="fa-solid fa-gift"></i></div>
+                <div class="promo-info">
+                  <strong>خصم 50%</strong>
+                  <span>أول 3 رحلات</span>
+                </div>
+                <code>WELCOME50</code>
+              </div>
+              <div class="promo-card promo-red">
+                <div class="promo-icon"><i class="fa-solid fa-tag"></i></div>
+                <div class="promo-info">
+                  <strong>خصم 20%</strong>
+                  <span>رحلات نهاية الأسبوع</span>
+                </div>
+                <code>WEEKEND20</code>
+              </div>
+              <div class="promo-card promo-green">
+                <div class="promo-icon"><i class="fa-solid fa-percent"></i></div>
+                <div class="promo-info">
+                  <strong>خصم 15%</strong>
+                  <span>عند الدفع بالمحفظة</span>
+                </div>
+                <code>WALLET15</code>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============== نموذج الحجز ============== -->
+        <div class="dash-tab" id="custBook">
+          <div class="book-header">
+            <button class="back-btn" onclick="switchCustTab('custHome')">
+              <i class="fa-solid fa-arrow-right"></i>
+            </button>
+            <h2>طلب تكسي جديد</h2>
+            <div></div>
+          </div>
+
+          <!-- الخريطة مع المسار -->
+          <div class="book-map-card">
+            <div id="bookingMap" class="book-map"></div>
+            <div class="route-info-bar">
+              <div class="route-stat">
+                <i class="fa-solid fa-road"></i>
+                <span>المسافة: <strong id="routeDistance">--</strong></span>
+              </div>
+              <div class="route-stat">
+                <i class="fa-solid fa-clock"></i>
+                <span>الوقت: <strong id="routeDuration">--</strong></span>
+              </div>
+              <div class="route-stat">
+                <i class="fa-solid fa-money-bill"></i>
+                <span>السعر: <strong id="routePrice">--</strong></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- حقول العنوان -->
+          <div class="address-card">
+            <div class="address-row">
+              <div class="addr-dot dot-green"></div>
+              <div class="addr-input-wrap">
+                <label>نقطة الانطلاق</label>
+                <input type="text" id="bookFrom" placeholder="حدد موقعك الحالي على الخريطة" readonly />
+                <button class="gps-btn" onclick="useCurrentLocation('from')">
+                  <i class="fa-solid fa-location-crosshairs"></i> موقعي الحالي
+                </button>
+              </div>
+            </div>
+            <div class="addr-line"></div>
+            <div class="address-row">
+              <div class="addr-dot dot-red"></div>
+              <div class="addr-input-wrap">
+                <label>الوجهة</label>
+                <input type="text" id="bookTo" placeholder="حدد الوجهة على الخريطة" readonly />
+                <button class="gps-btn" onclick="openDestPicker()">
+                  <i class="fa-solid fa-map-marker-alt"></i> اختر من الخريطة
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- اختيار نوع السيارة -->
+          <div class="section-block">
+            <div class="block-head">
+              <h3><i class="fa-solid fa-car"></i> اختر نوع السيارة</h3>
+            </div>
+            <div class="vehicle-types" id="vehicleTypes">
+              <div class="vehicle-card" data-type="economy" data-multiplier="1">
+                <div class="v-icon"><i class="fa-solid fa-car"></i></div>
+                <div class="v-info">
+                  <strong>اقتصادي</strong>
+                  <span>3-5 دقائق</span>
+                  <span class="v-meta"><i class="fa-solid fa-chair"></i> 4 مقاعد</span>
+                </div>
+                <div class="v-price">
+                  <strong class="v-price-val">--</strong>
+                  <span>د.ع</span>
+                </div>
+              </div>
+              <div class="vehicle-card selected" data-type="comfort" data-multiplier="1.5">
+                <div class="v-icon"><i class="fa-solid fa-car-side"></i></div>
+                <div class="v-info">
+                  <strong>كومفورت</strong>
+                  <span>2-4 دقائق</span>
+                  <span class="v-meta"><i class="fa-solid fa-chair"></i> 4 مقاعد • مكيف</span>
+                </div>
+                <div class="v-price">
+                  <strong class="v-price-val">--</strong>
+                  <span>د.ع</span>
+                </div>
+              </div>
+              <div class="vehicle-card" data-type="premium" data-multiplier="2.5">
+                <div class="v-icon"><i class="fa-solid fa-car-rear"></i></div>
+                <div class="v-info">
+                  <strong>بريميوم</strong>
+                  <span>5-8 دقائق</span>
+                  <span class="v-meta"><i class="fa-solid fa-chair"></i> 4 مقاعد • فاخر</span>
+                </div>
+                <div class="v-price">
+                  <strong class="v-price-val">--</strong>
+                  <span>د.ع</span>
+                </div>
+              </div>
+              <div class="vehicle-card" data-type="van" data-multiplier="2">
+                <div class="v-icon"><i class="fa-solid fa-van-shuttle"></i></div>
+                <div class="v-info">
+                  <strong>عائلي</strong>
+                  <span>7-10 دقائق</span>
+                  <span class="v-meta"><i class="fa-solid fa-chair"></i> 7 مقاعد</span>
+                </div>
+                <div class="v-price">
+                  <strong class="v-price-val">--</strong>
+                  <span>د.ع</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- كوبون و طريقة الدفع -->
+          <div class="section-block">
+            <div class="form-row">
+              <div class="form-group">
+                <label><i class="fa-solid fa-ticket"></i> كود الخصم</label>
+                <div class="coupon-input">
+                  <input type="text" id="couponCode" placeholder="أدخل الكود" />
+                  <button type="button" onclick="applyCoupon()">تطبيق</button>
+                </div>
+                <small id="couponMsg"></small>
+              </div>
+              <div class="form-group">
+                <label><i class="fa-solid fa-credit-card"></i> طريقة الدفع</label>
+                <select id="paymentMethod">
+                  <option value="cash">💵 نقداً</option>
+                  <option value="wallet">👛 محفظة</option>
+                  <option value="card">💳 بطاقة</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <button class="btn-primary big full" onclick="findDriver()">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            ابحث عن سائق
+            <span id="bookBtnPrice">-- د.ع</span>
+          </button>
+        </div>
+
+        <!-- ============== تتبع الرحلة النشطة ============== -->
+        <div class="dash-tab" id="custTrip">
+          <div class="trip-status-bar">
+            <div class="trip-step done">
+              <div class="step-circle"><i class="fa-solid fa-check"></i></div>
+              <span>تم العثور على سائق</span>
+            </div>
+            <div class="trip-step active">
+              <div class="step-circle pulse"><i class="fa-solid fa-route"></i></div>
+              <span>السائق في الطريق إليك</span>
+            </div>
+            <div class="trip-step">
+              <div class="step-circle"><i class="fa-solid fa-flag-checkered"></i></div>
+              <span>بدأت الرحلة</span>
+            </div>
+            <div class="trip-step">
+              <div class="step-circle"><i class="fa-solid fa-star"></i></div>
+              <span>التقييم</span>
+            </div>
+          </div>
+
+          <div class="trip-map-card">
+            <div id="trackingMap" class="trip-map"></div>
+          </div>
+
+          <div class="driver-info-card">
+            <div class="driver-photo" id="driverPhoto">ك</div>
+            <div class="driver-info">
+              <strong id="tripDriverName">كريم عبدالله</strong>
+              <span class="muted">
+                <i class="fa-solid fa-star text-yellow"></i>
+                <span id="tripDriverRating">4.9</span> •
+                <span id="tripDriverTrips">1,250 رحلة</span>
+              </span>
+              <span class="car-plate" id="tripDriverPlate">12-345-أ ب</span>
+            </div>
+            <div class="driver-actions">
+              <button class="action-btn" onclick="callDriver()"><i class="fa-solid fa-phone"></i></button>
+              <button class="action-btn" onclick="chatDriver()"><i class="fa-solid fa-comment"></i></button>
+              <button class="action-btn danger" onclick="emergencyCall()"><i class="fa-solid fa-shield"></i></button>
+            </div>
+          </div>
+
+          <div class="trip-details">
+            <div class="td-row">
+              <div class="td-icon dot-green"></div>
+              <div>
+                <small>من</small>
+                <strong id="tripFromText">--</strong>
+              </div>
+            </div>
+            <div class="td-row">
+              <div class="td-icon dot-red"></div>
+              <div>
+                <small>إلى</small>
+                <strong id="tripToText">--</strong>
+              </div>
+            </div>
+            <div class="td-stats">
+              <div><i class="fa-solid fa-road"></i> <span id="tripDistance">5.2 كم</span></div>
+              <div><i class="fa-solid fa-clock"></i> <span id="tripETA">15 دقيقة</span></div>
+              <div><i class="fa-solid fa-money-bill"></i> <span id="tripFare">8,500 د.ع</span></div>
+            </div>
+          </div>
+
+          <div class="trip-actions">
+            <button class="btn-secondary" onclick="cancelTrip()">
+              <i class="fa-solid fa-xmark"></i> إلغاء الرحلة
+            </button>
+            <button class="btn-primary" onclick="simulateArrival()">
+              <i class="fa-solid fa-flag-checkered"></i> محاكاة الوصول
+            </button>
+          </div>
+        </div>
+
+        <!-- ============== رحلاتي ============== -->
+        <div class="dash-tab" id="custTrips">
+          <h2 class="page-title"><i class="fa-solid fa-clock-rotate-left"></i> رحلاتي</h2>
+
+          <div class="filter-tabs">
+            <button class="ft-tab active" data-filter="all">الكل</button>
+            <button class="ft-tab" data-filter="completed">مكتملة</button>
+            <button class="ft-tab" data-filter="active">قيد التنفيذ</button>
+            <button class="ft-tab" data-filter="cancelled">ملغية</button>
+          </div>
+
+          <div id="customerTripsList" class="trips-list"></div>
+        </div>
+
+        <!-- ============== المحفظة ============== -->
+        <div class="dash-tab" id="custWallet">
+          <h2 class="page-title"><i class="fa-solid fa-wallet"></i> محفظتي</h2>
+
+          <div class="wallet-main-card">
+            <div class="wallet-bg"></div>
+            <div class="wallet-content">
+              <div>
+                <p class="muted small">الرصيد المتاح</p>
+                <h2 id="walletBalance">25,000 <small>د.ع</small></h2>
+              </div>
+              <div class="wallet-actions">
+                <button class="wa-btn" onclick="walletAction('topup')">
+                  <i class="fa-solid fa-plus"></i> شحن
+                </button>
+                <button class="wa-btn" onclick="walletAction('send')">
+                  <i class="fa-solid fa-paper-plane"></i> تحويل
+                </button>
+                <button class="wa-btn" onclick="walletAction('withdraw')">
+                  <i class="fa-solid fa-money-bill-wave"></i> سحب
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="wallet-cards">
+            <div class="mini-card" onclick="walletAction('topup')">
+              <i class="fa-solid fa-plus-circle icon-blue"></i>
+              <span>شحن المحفظة</span>
+            </div>
+            <div class="mini-card" onclick="walletAction('topup')">
+              <i class="fa-solid fa-mobile-screen icon-green"></i>
+              <span>من زين كاش</span>
+            </div>
+            <div class="mini-card" onclick="walletAction('topup')">
+              <i class="fa-solid fa-mobile-screen icon-yellow"></i>
+              <span>من آسيا كاش</span>
+            </div>
+            <div class="mini-card" onclick="walletAction('card')">
+              <i class="fa-solid fa-credit-card icon-purple"></i>
+              <span>بطاقة بنكية</span>
+            </div>
+          </div>
+
+          <h3 class="sub-title"><i class="fa-solid fa-list"></i> آخر العمليات</h3>
+          <div id="walletTransactions" class="transactions-list"></div>
+        </div>
+
+        <!-- ============== حسابي ============== -->
+        <div class="dash-tab" id="custProfile">
+          <div class="profile-header">
+            <div class="profile-avatar" id="profileAvatarBig">أ</div>
+            <h2 id="profileNameBig">أحمد محمد</h2>
+            <p id="profileEmailBig">ahmed@mail.com</p>
+            <div class="profile-badges">
+              <span class="badge badge-gold"><i class="fa-solid fa-crown"></i> زبون ذهبي</span>
+              <span class="badge badge-verified"><i class="fa-solid fa-circle-check"></i> موثق</span>
+            </div>
+          </div>
+
+          <div class="profile-stats-row">
+            <div class="ps-item">
+              <strong id="psTrips">45</strong>
+              <span>رحلة</span>
+            </div>
+            <div class="ps-item">
+              <strong id="psRating">4.9</strong>
+              <span>تقييم</span>
+            </div>
+            <div class="ps-item">
+              <strong>320K</strong>
+              <span>د.ع</span>
+            </div>
+          </div>
+
+          <div class="profile-menu">
+            <div class="menu-group">
+              <h4>الحساب</h4>
+              <button class="menu-item" onclick="switchCustTab('custProfile')">
+                <i class="fa-solid fa-user-pen"></i>
+                <span>تعديل البيانات الشخصية</span>
+                <i class="fa-solid fa-chevron-left"></i>
+              </button>
+              <button class="menu-item" onclick="manageAddresses()">
+                <i class="fa-solid fa-location-dot"></i>
+                <span>العناوين المحفوظة</span>
+                <i class="fa-solid fa-chevron-left"></i>
+              </button>
+              <button class="menu-item">
+                <i class="fa-solid fa-credit-card"></i>
+                <span>طرق الدفع</span>
+                <i class="fa-solid fa-chevron-left"></i>
+              </button>
+              <button class="menu-item" onclick="managePromo()">
+                <i class="fa-solid fa-ticket"></i>
+                <span>الكوبونات</span>
+                <span class="badge-count">3</span>
+                <i class="fa-solid fa-chevron-left"></i>
+              </button>
+            </div>
+
+            <div class="menu-group">
+              <h4>الإعدادات</h4>
+              <button class="menu-item">
+                <i class="fa-solid fa-bell"></i>
+                <span>الإشعارات</span>
+                <span class="switch on"><span class="knob"></span></span>
+              </button>
+              <button class="menu-item" onclick="toggleDarkMode()">
+                <i class="fa-solid fa-moon"></i>
+                <span>الوضع الليلي</span>
+                <span class="switch" id="darkModeSwitch"><span class="knob"></span></span>
+              </button>
+              <button class="menu-item">
+                <i class="fa-solid fa-language"></i>
+                <span>اللغة</span>
+                <span class="menu-value">العربية</span>
+              </button>
+            </div>
+
+            <div class="menu-group">
+              <h4>الدعم</h4>
+              <button class="menu-item" onclick="showPage('contactPage')">
+                <i class="fa-solid fa-headset"></i>
+                <span>الدعم الفني</span>
+                <i class="fa-solid fa-chevron-left"></i>
+              </button>
+              <button class="menu-item">
+                <i class="fa-solid fa-circle-question"></i>
+                <span>الأسئلة الشائعة</span>
+                <i class="fa-solid fa-chevron-left"></i>
+              </button>
+              <button class="menu-item">
+                <i class="fa-solid fa-shield-halved"></i>
+                <span>السياسات و الخصوصية</span>
+                <i class="fa-solid fa-chevron-left"></i>
+              </button>
+            </div>
+
+            <button class="btn-secondary full danger" onclick="logout()">
+              <i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج
+            </button>
+
+            <p class="version-text">الإصدار 2.5.0 © 2026 تكسي دجلة</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- شريط التنقل السفلي -->
+      <nav class="bottom-nav customer-nav">
+        <button class="bnav-btn active" data-tab="custHome">
+          <i class="fa-solid fa-house"></i>
+          <span>الرئيسية</span>
+        </button>
+        <button class="bnav-btn" data-tab="custTrips">
+          <i class="fa-solid fa-clock-rotate-left"></i>
+          <span>رحلاتي</span>
+        </button>
+        <button class="bnav-btn fab" data-tab="custBook">
+          <i class="fa-solid fa-plus"></i>
+        </button>
+        <button class="bnav-btn" data-tab="custWallet">
+          <i class="fa-solid fa-wallet"></i>
+          <span>المحفظة</span>
+        </button>
+        <button class="bnav-btn" data-tab="custProfile">
+          <i class="fa-solid fa-user"></i>
+          <span>حسابي</span>
+        </button>
+      </nav>
+    </section>
+
+    <!-- ========== لوحة تحكم السائق ========== -->
+    <section id="driverApp" class="page dashboard driver-dashboard">
+      <header class="dash-header driver-header">
+        <div class="dash-user">
+          <div class="user-avatar driver-avatar" id="driverAvatar">ك</div>
+          <div>
+            <strong id="driverName">كريم عبدالله</strong>
+            <span class="user-meta">
+              <i class="fa-solid fa-star"></i> <span id="driverRating">4.9</span>
+              <span class="dot-sep">•</span>
+              <span id="driverStatus">معتمد</span>
+            </span>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button class="online-toggle" id="onlineToggle" onclick="toggleOnline()">
+            <span class="status-dot"></span>
+            <span id="onlineText">متصل</span>
+          </button>
+          <button class="header-icon" onclick="logout()">
+            <i class="fa-solid fa-right-from-bracket"></i>
+          </button>
+        </div>
+      </header>
+
+      <div class="dash-content">
+        <!-- ============== الرئيسية ============== -->
+        <div class="dash-tab active" id="driverHome">
+          <div class="driver-stats-grid">
+            <div class="ds-card highlight">
+              <div class="ds-icon"><i class="fa-solid fa-coins"></i></div>
+              <div>
+                <span class="muted">أرباح اليوم</span>
+                <strong id="todayEarnings">45,000 <small>د.ع</small></strong>
+                <span class="trend up"><i class="fa-solid fa-arrow-up"></i> +12%</span>
+              </div>
+            </div>
+            <div class="ds-card">
+              <div class="ds-icon"><i class="fa-solid fa-route"></i></div>
+              <div>
+                <span class="muted">رحلات اليوم</span>
+                <strong id="todayTrips">12</strong>
+              </div>
+            </div>
+            <div class="ds-card">
+              <div class="ds-icon"><i class="fa-solid fa-clock"></i></div>
+              <div>
+                <span class="muted">ساعات العمل</span>
+                <strong id="todayHours">7.5</strong>
+              </div>
+            </div>
+            <div class="ds-card">
+              <div class="ds-icon"><i class="fa-solid fa-fire"></i></div>
+              <div>
+                <span class="muted">أسبوعي</span>
+                <strong>320K</strong>
+                <span class="trend up"><i class="fa-solid fa-arrow-up"></i> +15%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- خريطة السائق -->
+          <div class="big-map-card">
+            <div id="driverMap" class="big-map"></div>
+            <div class="map-status">
+              <i class="fa-solid fa-circle text-success"></i>
+              <span>تتبع مباشر</span>
+            </div>
+            <div class="map-info-overlay">
+              <i class="fa-solid fa-location-dot"></i>
+              <span id="driverArea">المنصور، بغداد</span>
+            </div>
+          </div>
+
+          <!-- طلب وارد -->
+          <div id="incomingRequest" class="incoming-request hidden">
+            <div class="request-pulse"></div>
+            <div class="request-content">
+              <div class="request-header">
+                <span class="request-badge">
+                  <span class="pulse-dot"></span> طلب جديد!
+                </span>
+                <div class="countdown" id="requestCountdown">15</div>
+              </div>
+
+              <div class="rider-info">
+                <div class="user-avatar">أ</div>
+                <div>
+                  <strong>أحمد محمد</strong>
+                  <span><i class="fa-solid fa-star text-yellow"></i> 4.9 • <span>1,250 رحلة</span></span>
+                </div>
+              </div>
+
+              <div class="route-display">
+                <div class="rd-row">
+                  <div class="rd-dot dot-green"></div>
+                  <div class="rd-info">
+                    <small>من</small>
+                    <strong>الكرادة، شارع 62</strong>
+                  </div>
+                </div>
+                <div class="rd-line"></div>
+                <div class="rd-row">
+                  <div class="rd-dot dot-red"></div>
+                  <div class="rd-info">
+                    <small>إلى</small>
+                    <strong>مطار بغداد الدولي</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div class="fare-display">
+                <div class="fare-item">
+                  <span>المسافة</span>
+                  <strong>22 كم</strong>
+                </div>
+                <div class="fare-item">
+                  <span>الوقت</span>
+                  <strong>~35 دقيقة</strong>
+                </div>
+                <div class="fare-item highlight">
+                  <span>الأجرة</span>
+                  <strong>25,000 د.ع</strong>
+                </div>
+              </div>
+
+              <div class="request-actions">
+                <button class="btn-reject" onclick="rejectRequest()">
+                  <i class="fa-solid fa-xmark"></i> رفض
+                </button>
+                <button class="btn-accept" onclick="acceptRequest()">
+                  <i class="fa-solid fa-check"></i> قبول
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- في رحلة -->
+          <div id="activeTrip" class="active-trip-card hidden">
+            <div class="trip-status-banner">
+              <i class="fa-solid fa-route pulse-icon"></i>
+              <span>في الطريق للزبون</span>
+            </div>
+
+            <div class="trip-rider-info">
+              <div class="user-avatar">أ</div>
+              <div class="flex-1">
+                <strong>أحمد محمد</strong>
+                <span class="muted small"><i class="fa-solid fa-star text-yellow"></i> 4.9</span>
+              </div>
+              <div class="rider-actions">
+                <button class="r-action" onclick="callDriver()"><i class="fa-solid fa-phone"></i></button>
+                <button class="r-action" onclick="chatDriver()"><i class="fa-solid fa-comment"></i></button>
+              </div>
+            </div>
+
+            <div class="trip-route-short">
+              <div><span class="dot dot-green"></span> الكرادة، شارع 62</div>
+              <div class="muted small"><i class="fa-solid fa-road"></i> 22 كم</div>
+              <div><span class="dot dot-red"></span> مطار بغداد</div>
+            </div>
+
+            <div class="trip-action-buttons">
+              <button class="trip-btn"><i class="fa-solid fa-diamond-turn-right"></i> الملاحة</button>
+              <button class="trip-btn"><i class="fa-solid fa-share"></i> مشاركة الرحلة</button>
+              <button class="trip-btn success" onclick="completeTrip()">
+                <i class="fa-solid fa-flag-checkered"></i> إنهاء
+              </button>
+            </div>
+          </div>
+
+          <!-- في انتظار طلب -->
+          <div id="waitingState" class="waiting-state">
+            <div class="waiting-icon">
+              <i class="fa-solid fa-satellite-dish"></i>
+            </div>
+            <h3>جاهز لاستقبال الطلبات</h3>
+            <p>نبحث عن أقرب زبون إليك...</p>
+            <div class="waiting-pulse"></div>
+          </div>
+        </div>
+
+        <!-- ============== الأرباح ============== -->
+        <div class="dash-tab" id="driverEarnings">
+          <h2 class="page-title"><i class="fa-solid fa-coins"></i> أرباحي</h2>
+
+          <div class="earnings-hero-card">
+            <div class="eh-bg"></div>
+            <div class="eh-content">
+              <span>إجمالي الأسبوع</span>
+              <h2>320,000 <small>د.ع</small></h2>
+              <div class="trend up big">
+                <i class="fa-solid fa-arrow-trend-up"></i> +15% عن الأسبوع الماضي
+              </div>
+            </div>
+          </div>
+
+          <div class="earnings-cards">
+            <div class="ec-item">
+              <span>اليوم</span>
+              <strong>45,000</strong>
+            </div>
+            <div class="ec-item">
+              <span>أمس</span>
+              <strong>38,500</strong>
+            </div>
+            <div class="ec-item">
+              <span>هذا الشهر</span>
+              <strong>1,250K</strong>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <h3>الأرباح اليومية - آخر 7 أيام</h3>
+            <canvas id="earningsChart" height="200"></canvas>
+          </div>
+
+          <div class="chart-card">
+            <h3>توزيع الرحلات</h3>
+            <canvas id="tripsChart" height="200"></canvas>
+          </div>
+
+          <h3 class="sub-title"><i class="fa-solid fa-money-bill-wave"></i> السحوبات الأخيرة</h3>
+          <div id="payoutsList" class="payouts-list"></div>
+
+          <button class="btn-primary full big" onclick="requestWithdrawal()">
+            <i class="fa-solid fa-money-bill-wave"></i> طلب سحب
+          </button>
+        </div>
+
+        <!-- ============== الرحلات ============== -->
+        <div class="dash-tab" id="driverTrips">
+          <h2 class="page-title"><i class="fa-solid fa-route"></i> رحلاتي</h2>
+
+          <div class="filter-tabs">
+            <button class="ft-tab active">الكل</button>
+            <button class="ft-tab">اليوم</button>
+            <button class="ft-tab">هذا الأسبوع</button>
+            <button class="ft-tab">هذا الشهر</button>
+          </div>
+
+          <div id="driverTripsList" class="trips-list"></div>
+        </div>
+
+        <!-- ============== الحساب ============== -->
+        <div class="dash-tab" id="driverProfile">
+          <div class="profile-header driver-profile">
+            <div class="profile-avatar driver-avatar" id="driverProfileAvatar">ك</div>
+            <h2 id="driverProfileName">كريم عبدالله</h2>
+            <p>سائق معتمد منذ يناير 2023</p>
+            <div class="profile-badges">
+              <span class="badge badge-verified"><i class="fa-solid fa-circle-check"></i> موثق</span>
+              <span class="badge badge-gold"><i class="fa-solid fa-trophy"></i> سائق ذهبي</span>
+            </div>
+          </div>
+
+          <div class="driver-vehicle-card">
+            <div class="dvc-icon"><i class="fa-solid fa-car-side"></i></div>
+            <div class="dvc-info">
+              <strong id="driverCar">تويوتا كامري 2022</strong>
+              <span class="muted small">اللوحة: <strong id="driverPlate">12-345-أ ب</strong></span>
+              <span class="muted small"><i class="fa-solid fa-palette"></i> أبيض • <i class="fa-solid fa-couch"></i> مكيف</span>
+            </div>
+            <button class="btn-icon" onclick="editVehicle()"><i class="fa-solid fa-pen"></i></button>
+          </div>
+
+          <div class="profile-stats-row">
+            <div class="ps-item">
+              <strong>1,250</strong>
+              <span>رحلة</span>
+            </div>
+            <div class="ps-item">
+              <strong>4.9<i class="fa-solid fa-star text-yellow"></i></strong>
+              <span>تقييم</span>
+            </div>
+            <div class="ps-item">
+              <strong>2.5M</strong>
+              <span>د.ع</span>
+            </div>
+          </div>
+
+          <div class="profile-menu">
+            <div class="menu-group">
+              <h4>الحساب</h4>
+              <button class="menu-item">
+                <i class="fa-solid fa-user-pen"></i>
+                <span>البيانات الشخصية</span>
+                <i class="fa-solid fa-chevron-left"></i>
+              </button>
+              <button class="menu-item" onclick="editVehicle()">
+                <i class="fa-solid fa-car"></i>
+                <span>بيانات السيارة</span>
+                <i class="fa-solid fa-chevron-left"></i>
+              </button>
+              <button class="menu-item">
+                <i class="fa-solid fa-file-lines"></i>
+                <span>وثائقي</span>
+                <span class="badge-count success">موثقة</span>
+                <i class="fa-solid fa-chevron-left"></i>
+              </button>
+            </div>
+
+            <div class="menu-group">
+              <h4>المالية</h4>
+              <button class="menu-item">
+                <i class="fa-solid fa-bank"></i>
+                <span>الحساب البنكي</span>
+                <i class="fa-solid fa-chevron-left"></i>
+              </button>
+              <button class="menu-item">
+                <i class="fa-solid fa-money-bill-wave"></i>
+                <span>سجل الأرباح</span>
+                <i class="fa-solid fa-chevron-left"></i>
+              </button>
+              <button class="menu-item">
+                <i class="fa-solid fa-file-invoice"></i>
+                <span>الفواتير</span>
+                <i class="fa-solid fa-chevron-left"></i>
+              </button>
+            </div>
+
+            <div class="menu-group">
+              <h4>الإعدادات</h4>
+              <button class="menu-item">
+                <i class="fa-solid fa-bell"></i>
+                <span>الإشعارات</span>
+                <span class="switch on"><span class="knob"></span></span>
+              </button>
+              <button class="menu-item">
+                <i class="fa-solid fa-language"></i>
+                <span>اللغة</span>
+                <span class="menu-value">العربية</span>
+              </button>
+              <button class="menu-item" onclick="showPage('contactPage')">
+                <i class="fa-solid fa-headset"></i>
+                <span>الدعم الفني</span>
+                <i class="fa-solid fa-chevron-left"></i>
+              </button>
+            </div>
+
+            <button class="btn-secondary full danger" onclick="logout()">
+              <i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- شريط التنقل السفلي -->
+      <nav class="bottom-nav driver-nav">
+        <button class="bnav-btn active" data-tab="driverHome">
+          <i class="fa-solid fa-house"></i>
+          <span>الرئيسية</span>
+        </button>
+        <button class="bnav-btn" data-tab="driverTrips">
+          <i class="fa-solid fa-route"></i>
+          <span>الرحلات</span>
+        </button>
+        <button class="bnav-btn fab driver-fab" data-tab="driverEarnings">
+          <i class="fa-solid fa-coins"></i>
+        </button>
+        <button class="bnav-btn" data-tab="driverEarnings">
+          <i class="fa-solid fa-chart-line"></i>
+          <span>الأرباح</span>
+        </button>
+        <button class="bnav-btn" data-tab="driverProfile">
+          <i class="fa-solid fa-user"></i>
+          <span>حسابي</span>
+        </button>
+      </nav>
+    </section>
+
+    <!-- ========== لوحة تحكم الأدمن ========== -->
+    <section id="adminApp" class="page dashboard admin-dashboard">
+      <header class="dash-header admin-header">
+        <div class="dash-user">
+          <div class="user-avatar admin-avatar"><i class="fa-solid fa-shield"></i></div>
+          <div>
+            <strong>مدير النظام</strong>
+            <span class="user-meta">
+              <i class="fa-solid fa-circle-check text-success"></i>
+              <span>صلاحيات كاملة</span>
+            </span>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button class="header-icon" onclick="openNotifications()">
+            <i class="fa-solid fa-bell"></i>
+            <span class="badge-dot" id="adminNotifDot"></span>
+          </button>
+          <button class="header-icon" onclick="logout()">
+            <i class="fa-solid fa-right-from-bracket"></i>
+          </button>
+        </div>
+      </header>
+
+      <div class="dash-content">
+        <!-- ============== لوحة التحكم ============== -->
+        <div class="dash-tab active" id="adminDashboard">
+          <h2 class="page-title"><i class="fa-solid fa-chart-line"></i> لوحة التحكم</h2>
+
+          <div class="admin-stats-grid">
+            <div class="admin-stat-card">
+              <div class="asc-icon icon-yellow"><i class="fa-solid fa-coins"></i></div>
+              <div class="asc-info">
+                <span>إجمالي الإيرادات</span>
+                <h3>15,420,000 <small>د.ع</small></h3>
+                <span class="trend up"><i class="fa-solid fa-arrow-up"></i> +12% هذا الشهر</span>
+              </div>
+            </div>
+            <div class="admin-stat-card">
+              <div class="asc-icon icon-green"><i class="fa-solid fa-route"></i></div>
+              <div class="asc-info">
+                <span>رحلات اليوم</span>
+                <h3>1,847</h3>
+                <span class="trend up"><i class="fa-solid fa-arrow-up"></i> +8% عن أمس</span>
+              </div>
+            </div>
+            <div class="admin-stat-card">
+              <div class="asc-icon icon-blue"><i class="fa-solid fa-users"></i></div>
+              <div class="asc-info">
+                <span>سائقين نشطين</span>
+                <h3>524</h3>
+                <span class="trend up"><i class="fa-solid fa-arrow-up"></i> +3%</span>
+              </div>
+            </div>
+            <div class="admin-stat-card highlight">
+              <div class="asc-icon icon-red"><i class="fa-solid fa-user-clock"></i></div>
+              <div class="asc-info">
+                <span>طلبات معلقة</span>
+                <h3 id="pendingCount">7</h3>
+                <span class="trend down"><i class="fa-solid fa-circle-exclamation"></i> يحتاج مراجعة</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="admin-charts-grid">
+            <div class="chart-card large">
+              <h3><i class="fa-solid fa-chart-area"></i> إيرادات آخر 7 أيام</h3>
+              <canvas id="revenueChart" height="250"></canvas>
+            </div>
+            <div class="chart-card">
+              <h3><i class="fa-solid fa-chart-pie"></i> توزيع الرحلات</h3>
+              <canvas id="tripsDonut" height="200"></canvas>
+            </div>
+          </div>
+
+          <div class="data-card">
+            <div class="data-head">
+              <h3><i class="fa-solid fa-clock-rotate-left"></i> آخر الرحلات</h3>
+              <button class="text-btn" onclick="switchAdminTab('adminRides')">عرض الكل</button>
+            </div>
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>الزبون</th>
+                    <th>السائق</th>
+                    <th>المسار</th>
+                    <th>المبلغ</th>
+                    <th>الحالة</th>
+                  </tr>
+                </thead>
+                <tbody id="adminTripsBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============== إدارة السائقين ============== -->
+        <div class="dash-tab" id="adminDrivers">
+          <div class="section-head">
+            <h2 class="page-title"><i class="fa-solid fa-id-card"></i> إدارة السائقين</h2>
+          </div>
+
+          <div class="filter-tabs">
+            <button class="ft-tab active" data-filter="pending">
+              قيد المراجعة <span class="count" id="pendingChipCount">7</span>
+            </button>
+            <button class="ft-tab" data-filter="approved">معتمدين</button>
+            <button class="ft-tab" data-filter="blocked">محظورين</button>
+            <button class="ft-tab" data-filter="all">الكل</button>
+          </div>
+
+          <div id="adminDriversList" class="drivers-grid"></div>
+        </div>
+
+        <!-- ============== إدارة الرحلات ============== -->
+        <div class="dash-tab" id="adminRides">
+          <h2 class="page-title"><i class="fa-solid fa-route"></i> جميع الرحلات</h2>
+
+          <div class="search-bar">
+            <i class="fa-solid fa-search"></i>
+            <input type="text" placeholder="بحث برقم الرحلة، الزبون، أو السائق..." />
+          </div>
+
+          <div class="data-card">
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>الزبون</th>
+                    <th>السائق</th>
+                    <th>المسار</th>
+                    <th>المبلغ</th>
+                    <th>التقييم</th>
+                    <th>التاريخ</th>
+                    <th>الحالة</th>
+                  </tr>
+                </thead>
+                <tbody id="allRidesBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============== إدارة الزبائن ============== -->
+        <div class="dash-tab" id="adminUsers">
+          <h2 class="page-title"><i class="fa-solid fa-users"></i> الزبائن</h2>
+
+          <div class="search-bar">
+            <i class="fa-solid fa-search"></i>
+            <input type="text" placeholder="بحث بالاسم، الإيميل، أو الهاتف..." />
+          </div>
+
+          <div id="usersGrid" class="users-grid-admin"></div>
+        </div>
+
+        <!-- ============== الإعدادات ============== -->
+        <div class="dash-tab" id="adminSettings">
+          <h2 class="page-title"><i class="fa-solid fa-gear"></i> إعدادات النظام</h2>
+
+          <div class="settings-grid">
+            <div class="setting-card">
+              <h3><i class="fa-solid fa-money-bill"></i> تسعير الرحلات</h3>
+              <div class="setting-row">
+                <label>سعر الكيلومتر (اقتصادي)</label>
+                <input type="number" id="priceEconomy" value="500" />
+              </div>
+              <div class="setting-row">
+                <label>سعر الكيلومتر (كومفورت)</label>
+                <input type="number" id="priceComfort" value="800" />
+              </div>
+              <div class="setting-row">
+                <label>سعر الكيلومتر (بريميوم)</label>
+                <input type="number" id="pricePremium" value="1500" />
+              </div>
+              <div class="setting-row">
+                <label>سعر الكيلومتر (عائلي)</label>
+                <input type="number" id="priceVan" value="1000" />
+              </div>
+              <div class="setting-row">
+                <label>الحد الأدنى للرحلة</label>
+                <input type="number" id="priceMin" value="3000" />
+              </div>
+              <div class="setting-row">
+                <label>سعر الانطلاق</label>
+                <input type="number" id="priceBase" value="1000" />
+              </div>
+              <button class="btn-primary" onclick="savePricing()">
+                <i class="fa-solid fa-floppy-disk"></i> حفظ التغييرات
+              </button>
+            </div>
+
+            <div class="setting-card">
+              <h3><i class="fa-solid fa-percent"></i> العمولات والخصومات</h3>
+              <div class="setting-row">
+                <label>عمولة التطبيق (%)</label>
+                <input type="number" id="commissionRate" value="15" />
+              </div>
+              <div class="setting-row">
+                <label>خصم الزبون الجديد (%)</label>
+                <input type="number" id="newUserDiscount" value="30" />
+              </div>
+              <div class="setting-row">
+                <label>كود الخصم الترحيبي</label>
+                <input type="text" id="welcomeCode" value="WELCOME50" />
+              </div>
+              <button class="btn-primary" onclick="saveCommissions()">
+                <i class="fa-solid fa-floppy-disk"></i> حفظ التغييرات
+              </button>
+            </div>
+
+            <div class="setting-card">
+              <h3><i class="fa-solid fa-bell"></i> الإشعارات</h3>
+              <div class="toggle-row">
+                <span>إشعار عند طلب جديد</span>
+                <span class="switch on"><span class="knob"></span></span>
+              </div>
+              <div class="toggle-row">
+                <span>إشعار عند اكتمال الرحلة</span>
+                <span class="switch on"><span class="knob"></span></span>
+              </div>
+              <div class="toggle-row">
+                <span>إعلانات وعروض ترويجية</span>
+                <span class="switch"><span class="knob"></span></span>
+              </div>
+              <div class="toggle-row">
+                <span>إشعار للسائقين عند موافقة طلبهم</span>
+                <span class="switch on"><span class="knob"></span></span>
+              </div>
+            </div>
+
+            <div class="setting-card">
+              <h3><i class="fa-solid fa-shield-halved"></i> الأمان والحماية</h3>
+              <div class="toggle-row">
+                <span>التحقق بخطوتين</span>
+                <span class="switch on"><span class="knob"></span></span>
+              </div>
+              <div class="toggle-row">
+                <span>مشاركة الرحلة مع الطوارئ</span>
+                <span class="switch on"><span class="knob"></span></span>
+              </div>
+              <div class="toggle-row">
+                <span>تسجيل الصوت أثناء الرحلة</span>
+                <span class="switch"><span class="knob"></span></span>
+              </div>
+              <div class="toggle-row">
+                <span>التحقق من هوية الزبون</span>
+                <span class="switch on"><span class="knob"></span></span>
+              </div>
+            </div>
+
+            <div class="setting-card">
+              <h3><i class="fa-solid fa-map-location-dot"></i> منطقة الخدمة</h3>
+              <div class="setting-row">
+                <label>نصف قطر البحث (كم)</label>
+                <input type="number" value="15" />
+              </div>
+              <div class="setting-row">
+                <label>المدن المغطاة</label>
+                <input type="text" value="بغداد، البصرة، أربيل، الموصل" />
+              </div>
+              <div class="setting-row">
+                <label>وقت الانتظار الأقصى (دقيقة)</label>
+                <input type="number" value="5" />
+              </div>
+              <button class="btn-primary" onclick="toast('تم حفظ الإعدادات', 'success')">
+                <i class="fa-solid fa-floppy-disk"></i> حفظ
+              </button>
+            </div>
+
+            <div class="setting-card">
+              <h3><i class="fa-solid fa-headset"></i> الدعم الفني</h3>
+              <div class="support-stats">
+                <div class="ss-item">
+                  <span>تذاكر مفتوحة</span>
+                  <strong>12</strong>
+                </div>
+                <div class="ss-item">
+                  <span>مغلقة اليوم</span>
+                  <strong>34</strong>
+                </div>
+                <div class="ss-item">
+                  <span>متوسط الرد</span>
+                  <strong>3 د</strong>
+                </div>
+              </div>
+              <button class="btn-secondary" onclick="showPage('contactPage')">
+                <i class="fa-solid fa-ticket"></i> إدارة التذاكر
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- شريط التنقل السفلي -->
+      <nav class="bottom-nav admin-nav">
+        <button class="bnav-btn active" data-tab="adminDashboard">
+          <i class="fa-solid fa-chart-line"></i>
+          <span>الرئيسية</span>
+        </button>
+        <button class="bnav-btn" data-tab="adminDrivers">
+          <i class="fa-solid fa-id-card"></i>
+          <span>السائقين</span>
+        </button>
+        <button class="bnav-btn" data-tab="adminRides">
+          <i class="fa-solid fa-route"></i>
+          <span>الرحلات</span>
+        </button>
+        <button class="bnav-btn" data-tab="adminUsers">
+          <i class="fa-solid fa-users"></i>
+          <span>الزبائن</span>
+        </button>
+        <button class="bnav-btn" data-tab="adminSettings">
+          <i class="fa-solid fa-gear"></i>
+          <span>الإعدادات</span>
+        </button>
+      </nav>
+    </section>
+
+    <!-- ========== المودالات ========== -->
+
+    <!-- مودال البحث عن سائق -->
+    <div id="searchingModal" class="modal">
+      <div class="modal-overlay"></div>
+      <div class="modal-content">
+        <div class="searching-animation">
+          <div class="pulse-ring"></div>
+          <div class="pulse-ring delay-1"></div>
+          <div class="pulse-ring delay-2"></div>
+          <i class="fa-solid fa-car"></i>
+        </div>
+        <h3>جاري البحث عن سائق...</h3>
+        <p id="searchStatus">نتأكد من السائقين القريبين منك</p>
+        <div class="search-steps" id="searchSteps">
+          <div class="search-step done"><i class="fa-solid fa-check"></i> تحديد موقعك</div>
+          <div class="search-step done"><i class="fa-solid fa-check"></i> البحث عن سائقين</div>
+          <div class="search-step active"><i class="fa-solid fa-spinner"></i> إرسال الطلب</div>
+          <div class="search-step"><i class="fa-solid fa-hourglass-half"></i> انتظار الرد</div>
+        </div>
+        <button class="btn-secondary" onclick="cancelSearch()">
+          <i class="fa-solid fa-xmark"></i> إلغاء
+        </button>
+      </div>
+    </div>
+
+    <!-- مودال تأكيد السائق -->
+    <div id="driverFoundModal" class="modal">
+      <div class="modal-overlay"></div>
+      <div class="modal-content success-modal">
+        <div class="success-checkmark">
+          <i class="fa-solid fa-check"></i>
+        </div>
+        <h3>تم العثور على سائق! 🎉</h3>
+        <p>كريم عبدالله في طريقه إليك</p>
+
+        <div class="found-driver-card">
+          <div class="fd-photo driver-avatar">ك</div>
+          <div class="fd-info">
+            <strong>كريم عبدالله</strong>
+            <span class="muted"><i class="fa-solid fa-star text-yellow"></i> 4.9 (1,250 رحلة)</span>
+            <span class="car-plate">تويوتا كامري • أبيض • 12-345-أ ب</span>
+          </div>
+          <div class="fd-eta">
+            <strong>3</strong>
+            <span>دقيقة</span>
+          </div>
+        </div>
+
+        <div class="trip-summary">
+          <div class="ts-row">
+            <span>من</span>
+            <strong id="tripFromText2">--</strong>
+          </div>
+          <div class="ts-row">
+            <span>إلى</span>
+            <strong id="tripToText2">--</strong>
+          </div>
+          <div class="ts-row">
+            <span>المسافة</span>
+            <strong id="tripDistText2">--</strong>
+          </div>
+          <div class="ts-row highlight">
+            <span>المبلغ الإجمالي</span>
+            <strong id="tripFareText2" class="text-yellow">--</strong>
+          </div>
+        </div>
+
+        <button class="btn-primary full big" onclick="goToTrip()">
+          <i class="fa-solid fa-location-arrow"></i>
+          متابعة الرحلة
+        </button>
+        <button class="btn-secondary full" onclick="cancelSearch()">إلغاء الطلب</button>
+      </div>
+    </div>
+
+    <!-- مودال التقييم -->
+    <div id="ratingModal" class="modal">
+      <div class="modal-overlay"></div>
+      <div class="modal-content">
+        <div class="rating-icon">
+          <i class="fa-solid fa-star"></i>
+        </div>
+        <h3>كيف كانت رحلتك؟</h3>
+        <p>ساعدنا بتحسين الخدمة بتقييمك</p>
+
+        <div class="rating-stars" id="ratingStars">
+          <i class="fa-solid fa-star" data-r="1"></i>
+          <i class="fa-solid fa-star" data-r="2"></i>
+          <i class="fa-solid fa-star" data-r="3"></i>
+          <i class="fa-solid fa-star" data-r="4"></i>
+          <i class="fa-solid fa-star" data-r="5"></i>
+        </div>
+
+        <div class="quick-tags">
+          <button class="qt" onclick="addTag(this)">سائق ممتاز</button>
+          <button class="qt" onclick="addTag(this)">سيارة نظيفة</button>
+          <button class="qt" onclick="addTag(this)">سريع</button>
+          <button class="qt" onclick="addTag(this)">مكيّف</button>
+        </div>
+
+        <textarea id="ratingComment" rows="3" placeholder="اكتب تعليقك (اختياري)..."></textarea>
+
+        <div class="tip-section">
+          <p>إضافة بقشيش للسائق؟</p>
+          <div class="tip-options">
+            <button onclick="selectTip(this, 0)" class="active">لا</button>
+            <button onclick="selectTip(this, 500)">500</button>
+            <button onclick="selectTip(this, 1000)">1000</button>
+            <button onclick="selectTip(this, 2000)">2000</button>
+          </div>
+        </div>
+
+        <button class="btn-primary full big" onclick="submitRating()">
+          <i class="fa-solid fa-paper-plane"></i> إرسال التقييم
+        </button>
+      </div>
+    </div>
+
+    <!-- مودال الإشعارات -->
+    <div id="notificationsModal" class="modal">
+      <div class="modal-overlay" onclick="closeModal('notificationsModal')"></div>
+      <div class="modal-content notifications-modal">
+        <div class="modal-header">
+          <h3>الإشعارات</h3>
+          <button class="close-btn" onclick="closeModal('notificationsModal')">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div id="notificationsList" class="notifications-list"></div>
+      </div>
+    </div>
+
+    <!-- مودال توست -->
+    <div id="toast" class="toast"></div>
+  </div>
+
+  <!-- المكتبات -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <!-- التطبيق -->
+  <script src="js/db.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/maps.js"></script>
+  <script src="js/customer.js"></script>
+  <script src="js/driver.js"></script>
+  <script src="js/admin.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
