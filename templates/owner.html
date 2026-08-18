@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>إدارة دجلة رايد | لوحة المالك</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='owner.css') }}">
+</head>
+<body class="owner-body">
+  <div class="owner-login" id="ownerLogin">
+    <form id="ownerLoginForm" class="owner-login-card">
+      <a class="brand" href="/"><span class="brand-mark">د</span><span><b>دجلة</b> رايد</span></a>
+      <span class="owner-label">بوابة مالك التطبيق</span><h1>تسجيل دخول الإدارة</h1><p>هذه المنطقة خاصة بإدارة ومراجعة عمليات دجلة رايد.</p>
+      <label><span>رقم هاتف المالك</span><input name="phone" type="tel" required></label>
+      <label><span>كلمة السر</span><input name="password" type="password" required></label>
+      <button class="primary-button"><span>دخول آمن</span><b>←</b></button>
+      <small>🔒 جلسة محمية، لا تشارك معلومات دخولك</small>
+    </form>
+  </div>
+
+  <div class="owner-shell" id="ownerShell" hidden>
+    <aside class="owner-sidebar">
+      <a class="brand light" href="/"><span class="brand-mark">د</span><span><b>دجلة</b> رايد</span></a>
+      <div class="owner-user"><span>م</span><div><b id="ownerName">مالك التطبيق</b><small>مدير النظام</small></div></div>
+      <nav><button class="active" data-owner-view="overview">⌂ <span>نظرة عامة</span></button><button data-owner-view="applications">♙ <span>طلبات السائقين</span><i id="pendingBadge">0</i></button><button data-owner-view="rides">↗ <span>جميع الرحلات</span></button></nav>
+      <div class="sidebar-bottom"><a href="/">← فتح تطبيق الزبون</a><button id="ownerLogout">تسجيل الخروج</button></div>
+    </aside>
+    <main class="owner-main">
+      <header><div><small>لوحة التحكم / <span id="pageCrumb">نظرة عامة</span></small><h2 id="pageTitle">أهلاً بك 👋</h2></div><div class="owner-date" id="ownerDate"></div></header>
+
+      <section class="owner-view active" id="overviewOwnerView">
+        <div class="stats-grid owner-stats">
+          <article><span class="stat-icon blue">↗</span><p>طلبات اليوم</p><strong id="ownerStatTotal">0</strong><small>جميع طلبات اليوم</small></article>
+          <article><span class="stat-icon green">✓</span><p>رحلات مكتملة</p><strong id="ownerStatCompleted">0</strong><small>تمت بنجاح</small></article>
+          <article><span class="stat-icon orange">●</span><p>رحلات نشطة</p><strong id="ownerStatActive">0</strong><small>تحت المتابعة الآن</small></article>
+          <article><span class="stat-icon purple">♙</span><p>سائقون متصلون</p><strong id="ownerStatDrivers">0</strong><small>جاهزون للعمل</small></article>
+        </div>
+        <div class="owner-grid">
+          <section class="panel owner-panel"><div class="panel-header"><div><h3>طلبات تحتاج إجراء</h3><p>طلبات تسجيل سائقين بانتظار التدقيق</p></div><button class="refresh-button" data-go="applications">عرض الكل</button></div><div id="pendingPreview" class="pending-preview"></div></section>
+          <aside class="panel security-card"><span>🛡️</span><h3>مركز الأمان</h3><p>راجع الهوية والصورة الحية وإجازة السوق بدقة قبل قبول أي سائق.</p><b>المستمسكات خاصة ومحمية</b></aside>
+        </div>
+      </section>
+
+      <section class="owner-view" id="applicationsOwnerView">
+        <div class="section-heading"><div><h2>طلبات تسجيل السائقين</h2><p>افتح كل طلب، طابق المعلومات والمستمسكات، ثم اتخذ القرار.</p></div><select id="applicationFilter"><option value="all">كل الطلبات</option><option value="pending">قيد التدقيق</option><option value="approved">مقبول</option><option value="rejected">مرفوض</option></select></div>
+        <div class="applications-grid" id="applicationsGrid"></div>
+      </section>
+
+      <section class="owner-view" id="ridesOwnerView">
+        <div class="section-heading"><div><h2>سجل الرحلات</h2><p>كل الرحلات والركاب والسائقين في مكان واحد.</p></div><button class="refresh-button" id="ownerRefresh">↻ تحديث</button></div>
+        <div class="panel admin-table-panel"><div class="table-wrap"><table><thead><tr><th>الطلب</th><th>الراكب</th><th>المسار</th><th>السائق</th><th>الأجرة</th><th>الحالة</th></tr></thead><tbody id="ownerRidesTable"></tbody></table></div></div>
+      </section>
+    </main>
+  </div>
+
+  <div class="document-modal" id="documentModal" hidden><div><button id="closeDocument">×</button><img id="documentImage" alt="المستمسك"><iframe id="documentPdf" title="المستمسك"></iframe></div></div>
+  <div id="toast" class="toast"></div>
+  <script src="{{ url_for('static', filename='owner.js') }}"></script>
+</body>
+</html>

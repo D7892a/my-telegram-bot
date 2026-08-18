@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b5cff">
+  <title>دجلة رايد | مشوارك بالناصرية</title>
+  <meta name="description" content="احجز تكسي آمن وسريع داخل الناصرية مع دجلة رايد.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#" aria-label="دجلة رايد">
+      <span class="brand-mark">د</span>
+      <span><b>دجلة</b> رايد</span>
+    </a>
+    <nav class="main-nav" aria-label="التنقل الرئيسي">
+      <button class="nav-link active" data-view="customer">احجز مشوار</button>
+      <button class="nav-link" data-view="driver">للسائق</button>
+      <a class="nav-link owner-link" href="/owner">إدارة المالك ↗</a>
+    </nav>
+    <div class="header-actions">
+      <button class="account-button" id="accountButton">دخول / حساب جديد</button>
+      <button class="icon-button" id="themeToggle" aria-label="تبديل المظهر">☾</button>
+      <button class="location-pill"><span class="pulse-dot"></span> الناصرية</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="view active" id="customerView">
+      <div class="booking-layout">
+        <div class="booking-side">
+          <div class="eyebrow"><span></span> مشوارك يوصل بأمان</div>
+          <h1>وين تريد<br><em>تروح اليوم؟</em></h1>
+          <p class="lead">اختار موقعك ووجهتك، وأقرب كابتن بالناصرية يوصلك.</p>
+
+          <form id="rideForm" class="ride-form">
+            <div class="route-inputs">
+              <div class="route-line"><i></i><i></i><i></i></div>
+              <label class="location-input pickup-field">
+                <span class="pin pickup-pin"></span>
+                <span class="field-copy"><small>موقع الانطلاق</small><input id="pickupName" placeholder="حدد موقعك من الخريطة" autocomplete="off" required></span>
+                <button type="button" class="locate-btn" id="locateMe" title="موقعي الحالي">◎</button>
+              </label>
+              <label class="location-input destination-field">
+                <span class="pin destination-pin"></span>
+                <span class="field-copy"><small>الوجهة</small><input id="dropoffName" placeholder="وين تريد تروح؟" autocomplete="off" required></span>
+              </label>
+            </div>
+
+            <div class="quick-places" id="quickPlaces">
+              <button type="button" data-name="شارع الحبوبي" data-lat="31.0522" data-lng="46.2573">الحبوبي</button>
+              <button type="button" data-name="جامعة ذي قار" data-lat="31.0468" data-lng="46.2270">جامعة ذي قار</button>
+              <button type="button" data-name="مستشفى الحسين التعليمي" data-lat="31.0596" data-lng="46.2450">مستشفى الحسين</button>
+            </div>
+
+            <div class="map-instruction" id="mapInstruction"><b>1</b> اضغط على الخريطة لتحديد موقع الانطلاق</div>
+
+            <div class="ride-options" id="rideOptions">
+              <button type="button" class="ride-option active" data-type="economy" data-multiplier="1">
+                <span class="car-icon">🚕</span><span><b>اقتصادي</b><small>الأسرع والأوفر</small></span><strong class="option-price">—</strong>
+              </button>
+              <button type="button" class="ride-option" data-type="comfort" data-multiplier="1.3">
+                <span class="car-icon">🚘</span><span><b>مريح</b><small>سيارة أحدث</small></span><strong class="option-price">—</strong>
+              </button>
+              <button type="button" class="ride-option" data-type="family" data-multiplier="1.55">
+                <span class="car-icon">🚙</span><span><b>عائلي</b><small>حتى 6 ركاب</small></span><strong class="option-price">—</strong>
+              </button>
+            </div>
+
+            <div class="customer-fields">
+              <label><span>الاسم</span><input id="riderName" placeholder="اسم الراكب" required></label>
+              <label><span>رقم الهاتف</span><input id="riderPhone" type="tel" inputmode="tel" placeholder="07XX XXX XXXX" required></label>
+            </div>
+
+            <button class="primary-button" type="submit"><span>اطلب دجلة رايد</span><b id="submitFare">حدد الوجهة</b></button>
+            <p class="safe-note">🛡️ رحلتك مراقبة، والدفع نقداً عند الوصول</p>
+          </form>
+        </div>
+
+        <div class="map-side">
+          <div id="map" aria-label="خريطة الناصرية"></div>
+          <div class="map-top-card">
+            <span class="live-badge">مباشر</span>
+            <div><b><span id="nearbyCount">8</span> سائقين قريبين</b><small>وقت الوصول 3–6 دقائق</small></div>
+          </div>
+          <button class="reset-map" id="resetMap">↻ إعادة التحديد</button>
+          <div class="map-bottom-card">
+            <div class="metric"><span>المسافة</span><b id="distanceMetric">—</b></div>
+            <div class="divider"></div>
+            <div class="metric"><span>الوقت المتوقع</span><b id="timeMetric">—</b></div>
+            <div class="divider"></div>
+            <div class="metric accent"><span>الأجرة التقريبية</span><b id="fareMetric">—</b></div>
+          </div>
+        </div>
+      </div>
+
+      <section class="trust-strip">
+        <div><span>4.9</span><p><b>تقييم الركاب</b><small>خدمة يحبها أهلنا</small></p></div>
+        <div><span>24/7</span><p><b>متوفرين دائماً</b><small>بأي وقت تحتاجنا</small></p></div>
+        <div><span>100%</span><p><b>سائقين موثوقين</b><small>هوية وسيارة مدققة</small></p></div>
+      </section>
+    </section>
+
+    <section class="view dashboard-view" id="driverView">
+      <div class="dashboard-heading">
+        <div><span class="eyebrow"><span></span> تطبيق الكابتن</span><h2>هلا بالكابتن حيدر 👋</h2><p>تابع الطلبات القريبة وابدأ شغلك.</p></div>
+        <div class="driver-actions"><button class="outline-primary" id="driverApplyButton">تسجيل سائق جديد</button><label class="online-toggle"><span id="onlineLabel">متصل وتستقبل طلبات</span><input type="checkbox" id="driverOnline" checked><i></i></label></div>
+      </div>
+      <div class="driver-grid">
+        <div class="panel requests-panel">
+          <div class="panel-header"><div><h3>الطلبات القريبة</h3><p>مرتبة حسب المسافة من موقعك</p></div><button class="refresh-button" id="refreshRides">↻ تحديث</button></div>
+          <div id="driverRides" class="request-list"><div class="empty-state"><span>🚕</span><b>جاري تحميل الطلبات...</b></div></div>
+        </div>
+        <aside class="driver-sidebar">
+          <div class="wallet-card"><small>أرباح اليوم</small><strong>42,500 <i>د.ع</i></strong><div><span>5 رحلات مكتملة</span><b>+12% ↑</b></div></div>
+          <div class="panel profile-card"><div class="avatar">حج<span></span></div><h3>حيدر جاسم</h3><p>تويوتا كورولا · ذي قار 21 أ 4589</p><div class="rating">★ 4.9 <small>(124 رحلة)</small></div></div>
+          <div class="panel tips-card"><b>نصيحة اليوم 💡</b><p>أكثر الطلبات تكون بشارع الحبوبي بين الساعة 5 و8 مساءً.</p></div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="view dashboard-view" id="adminView">
+      <div class="dashboard-heading">
+        <div><span class="eyebrow"><span></span> لوحة العمليات</span><h2>نظرة عامة</h2><p>إدارة رحلات دجلة رايد داخل الناصرية.</p></div>
+        <span class="today-chip" id="todayDate"></span>
+      </div>
+      <div class="stats-grid">
+        <article><span class="stat-icon blue">↗</span><p>طلبات اليوم</p><strong id="statTotal">0</strong><small>جميع الطلبات المسجلة</small></article>
+        <article><span class="stat-icon green">✓</span><p>رحلات مكتملة</p><strong id="statCompleted">0</strong><small>تم توصيلها بنجاح</small></article>
+        <article><span class="stat-icon orange">●</span><p>رحلات نشطة</p><strong id="statActive">0</strong><small>قيد التنفيذ الآن</small></article>
+        <article><span class="stat-icon purple">⌁</span><p>السائقون المتصلون</p><strong id="statDrivers">0</strong><small>جاهزون لاستلام طلب</small></article>
+      </div>
+      <div class="panel admin-table-panel">
+        <div class="panel-header"><div><h3>آخر الرحلات</h3><p>تحديث مباشر لجميع الطلبات</p></div><button class="refresh-button" id="refreshAdmin">↻ تحديث</button></div>
+        <div class="table-wrap"><table><thead><tr><th>رقم الطلب</th><th>الراكب</th><th>المسار</th><th>السائق</th><th>الأجرة</th><th>الحالة</th></tr></thead><tbody id="ridesTable"></tbody></table></div>
+      </div>
+    </section>
+  </main>
+
+  <div class="modal-backdrop" id="successModal" hidden>
+    <div class="success-modal">
+      <button class="modal-close" id="closeModal">×</button>
+      <div class="success-check">✓</div>
+      <span class="eyebrow centered"><span></span> تم استلام طلبك</span>
+      <h2>كابتنك بالطريق!</h2>
+      <p>جاري البحث عن أقرب سائق. تقدر تتابع حالة الطلب من هنا.</p>
+      <div class="ride-ticket"><span>رقم الطلب<b id="ticketId">#—</b></span><span>الأجرة<b id="ticketFare">—</b></span></div>
+      <div class="status-steps"><i class="done"></i><i class="active"></i><i></i><span>تم الطلب</span><span>قبول السائق</span><span>وصول السائق</span></div>
+      <button class="primary-button" id="trackButton">حسناً، فهمت</button>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="authModal" hidden>
+    <div class="auth-modal">
+      <button class="modal-close" data-close="authModal">×</button>
+      <div class="auth-brand"><span class="brand-mark">د</span><div><b>أهلاً بك في دجلة رايد</b><small>سجل حتى تقدر تطلب مشوار</small></div></div>
+      <div class="auth-tabs"><button class="active" data-auth-tab="login">تسجيل الدخول</button><button data-auth-tab="register">حساب جديد</button></div>
+      <form id="loginForm" class="stack-form">
+        <label><span>رقم الهاتف</span><input name="phone" type="tel" inputmode="tel" placeholder="07XX XXX XXXX" required></label>
+        <label><span>كلمة السر</span><input name="password" type="password" placeholder="••••••••" required></label>
+        <button class="primary-button" type="submit"><span>دخول إلى حسابي</span><b>←</b></button>
+      </form>
+      <form id="registerForm" class="stack-form" hidden>
+        <label><span>الاسم الكامل</span><input name="name" placeholder="الاسم الثلاثي" required></label>
+        <label><span>رقم الهاتف</span><input name="phone" type="tel" inputmode="tel" placeholder="07XX XXX XXXX" required></label>
+        <label><span>كلمة السر</span><input name="password" type="password" minlength="8" placeholder="8 أحرف أو أكثر" required></label>
+        <button class="primary-button" type="submit"><span>إنشاء حساب زبون</span><b>←</b></button>
+      </form>
+      <p class="form-privacy">🔒 معلوماتك مشفرة وما نشاركها ويا أي جهة</p>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="driverModal" hidden>
+    <div class="driver-modal">
+      <button class="modal-close" data-close="driverModal">×</button>
+      <div class="modal-heading"><span class="eyebrow"><span></span> انضم إلى كباتن دجلة</span><h2>سجّل معلوماتك</h2><p>كل المستمسكات تبقى خاصة، ويطلع عليها فريق التدقيق فقط.</p></div>
+      <form id="driverApplicationForm" class="driver-application-form" enctype="multipart/form-data">
+        <div class="form-section"><h3><i>1</i> معلومات الحساب</h3><div class="form-grid">
+          <label><span>الاسم الكامل</span><input name="name" required></label>
+          <label><span>رقم الهاتف</span><input name="phone" type="tel" required></label>
+          <label class="wide"><span>كلمة السر</span><input name="password" type="password" minlength="8" placeholder="8 أحرف أو أكثر" required></label>
+        </div></div>
+        <div class="form-section"><h3><i>2</i> معلومات السيارة والإجازة</h3><div class="form-grid">
+          <label><span>المحافظة</span><select name="governorate" required><option value="ذي قار">ذي قار</option><option value="البصرة">البصرة</option><option value="ميسان">ميسان</option></select></label>
+          <label><span>رقم إجازة السوق</span><input name="license_number" required></label>
+          <label><span>رقم السيارة / اللوحة</span><input name="vehicle_number" required></label>
+          <label><span>اسم ونوع السيارة</span><input name="vehicle_name" placeholder="مثال: تويوتا كورولا 2022" required></label>
+          <label class="wide"><span>لون السيارة</span><input name="vehicle_color" placeholder="مثال: أبيض" required></label>
+        </div></div>
+        <div class="form-section"><h3><i>3</i> المستمسكات المطلوبة</h3><div class="upload-grid">
+          <label class="upload-box"><input type="file" name="id_card" accept="image/*,.pdf" required><span>🪪</span><b>الهوية الوطنية</b><small>اضغط لرفع الملف</small></label>
+          <label class="upload-box"><input type="file" name="license" accept="image/*,.pdf" required><span>📄</span><b>إجازة السوق</b><small>اضغط لرفع الملف</small></label>
+          <label class="upload-box"><input type="file" name="vehicle_doc" accept="image/*,.pdf" required><span>🚘</span><b>سنوية السيارة</b><small>اضغط لرفع الملف</small></label>
+          <label class="upload-box"><input type="file" name="selfie" accept="image/*" capture="user" required><span>🤳</span><b>صورة حية إلك</b><small>افتح الكاميرا أو ارفع صورة</small></label>
+        </div></div>
+        <label class="consent"><input type="checkbox" required> أتعهد أن جميع المعلومات والمستمسكات صحيحة وتخصني.</label>
+        <button class="primary-button" type="submit"><span>إرسال طلب التسجيل</span><b>للتدقيق ←</b></button>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
