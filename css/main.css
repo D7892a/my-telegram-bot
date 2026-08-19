@@ -3575,3 +3575,61 @@ ong { font-size: 20px; }
   .asc-icon { width: 44px; height: 44px; font-size: 20px; }
   .asc-info h3 { font-size: 18px; }
 }
+
+/* ========== إضافات ربط Firebase: حالة السحابة، الدعم، التذاكر ========== */
+.cloud-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.cloud-badge.ok { background: rgba(34, 197, 94, .15); color: #16a34a; }
+.cloud-badge.warn { background: rgba(245, 158, 11, .15); color: #d97706; }
+.cloud-badge.off { background: rgba(148, 163, 184, .18); color: #64748b; }
+
+.warn-box {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(245, 158, 11, .12);
+  color: #b45309;
+  font-size: 13px;
+  line-height: 1.8;
+}
+.warn-box a { color: inherit; font-weight: 800; text-decoration: underline; }
+
+.setting-card.wide { grid-column: 1 / -1; }
+
+.support-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+.support-actions button { flex: 1 1 140px; }
+
+.tickets-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+  max-height: 340px;
+  overflow-y: auto;
+}
+.ticket-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--surface-2, rgba(148, 163, 184, .08));
+}
+.ticket-row.closed { opacity: .6; }
+.ticket-main { display: flex; flex-direction: column; gap: 4px; }
+.ticket-main p { font-size: 13px; margin: 4px 0 0; line-height: 1.7; }
+.ticket-row button { padding: 6px 14px; font-size: 12px; }

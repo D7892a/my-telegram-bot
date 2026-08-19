@@ -207,19 +207,20 @@
           <div>
             <h4>تواصل معنا</h4>
             <ul>
-              <li><i class="fa-solid fa-phone"></i> +964 770 123 4567</li>
-              <li><i class="fa-solid fa-envelope"></i> info@dijla-taxi.iq</li>
-              <li><i class="fa-solid fa-location-dot"></i> الحبوبي، الناصرية</li>
+              <li><i class="fa-solid fa-phone"></i> <a data-support="phone" data-support-as="tel">+964 770 123 4567</a></li>
+              <li><i class="fa-solid fa-envelope"></i> <a data-support="email" data-support-as="mailto">info@dijla-taxi.iq</a></li>
+              <li><i class="fa-solid fa-location-dot"></i> <span data-support="address">الحبوبي، الناصرية</span></li>
+              <li><i class="fa-solid fa-clock"></i> <span data-support="hours">24/7</span></li>
             </ul>
           </div>
         </div>
         <div class="footer-bottom">
           <p>© 2026 تكسي دجلة. جميع الحقوق محفوظة.</p>
           <div class="social-links">
-            <a><i class="fa-brands fa-facebook"></i></a>
-            <a><i class="fa-brands fa-instagram"></i></a>
-            <a><i class="fa-brands fa-twitter"></i></a>
-            <a><i class="fa-brands fa-tiktok"></i></a>
+            <a data-support="facebook" data-support-as="link" target="_blank" rel="noopener"><i class="fa-brands fa-facebook"></i></a>
+            <a data-support="instagram" data-support-as="link" target="_blank" rel="noopener"><i class="fa-brands fa-instagram"></i></a>
+            <a data-support="telegram" data-support-as="link" target="_blank" rel="noopener"><i class="fa-brands fa-telegram"></i></a>
+            <a data-support="whatsapp" data-support-as="whatsapp" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i></a>
           </div>
         </div>
       </footer>
@@ -292,30 +293,51 @@
               <i class="fa-solid fa-phone"></i>
               <div>
                 <strong>اتصل بنا</strong>
-                <span>+964 770 123 4567</span>
+                <span data-support="phone">+964 770 123 4567</span>
+              </div>
+            </div>
+            <div class="contact-item">
+              <i class="fa-brands fa-whatsapp"></i>
+              <div>
+                <strong>واتساب الدعم</strong>
+                <span data-support="whatsapp">+964 770 123 4567</span>
               </div>
             </div>
             <div class="contact-item">
               <i class="fa-solid fa-envelope"></i>
               <div>
                 <strong>البريد الإلكتروني</strong>
-                <span>info@dijla-taxi.iq</span>
+                <span data-support="email">info@dijla-taxi.iq</span>
               </div>
             </div>
             <div class="contact-item">
               <i class="fa-solid fa-location-dot"></i>
               <div>
                 <strong>العنوان</strong>
-                <span>الحبوبي، الناصرية، ذي قار</span>
+                <span data-support="address">الحبوبي، الناصرية، ذي قار</span>
               </div>
             </div>
             <div class="contact-item">
               <i class="fa-solid fa-clock"></i>
               <div>
                 <strong>ساعات العمل</strong>
-                <span>24/7 - متاحون دائماً</span>
+                <span data-support="hours">24/7 - متاحون دائماً</span>
               </div>
             </div>
+          </div>
+
+          <p class="muted small" data-support="note"></p>
+
+          <div class="support-actions">
+            <button type="button" class="btn-primary" onclick="supportCall()">
+              <i class="fa-solid fa-phone"></i> اتصال مباشر
+            </button>
+            <button type="button" class="btn-secondary" onclick="supportWhatsapp()">
+              <i class="fa-brands fa-whatsapp"></i> واتساب
+            </button>
+            <button type="button" class="btn-secondary" onclick="supportEmail()">
+              <i class="fa-solid fa-envelope"></i> إيميل
+            </button>
           </div>
         </div>
 
@@ -396,13 +418,13 @@
               <label class="checkbox">
                 <input type="checkbox" /> <span>تذكرني</span>
               </label>
-              <a>نسيت كلمة المرور؟</a>
+              <a onclick="forgotPassword()">نسيت كلمة المرور؟</a>
             </div>
             <button type="submit" class="btn-primary full">
               <i class="fa-solid fa-right-to-bracket"></i> دخول
             </button>
             <div class="demo-section">
-              <p class="demo-label"><i class="fa-solid fa-flask"></i> حسابات تجريبية للتجربة:</p>
+              <p class="demo-label"><i class="fa-solid fa-flask"></i> حسابات تجريبية (زبون/سائق فقط — الإدارة تحتاج كلمة سر حقيقية):</p>
               <div class="demo-buttons">
                 <button type="button" onclick="quickLogin('customer')" class="demo-btn">
                   <i class="fa-solid fa-user"></i> زبون
@@ -410,9 +432,7 @@
                 <button type="button" onclick="quickLogin('driver')" class="demo-btn">
                   <i class="fa-solid fa-id-card"></i> سائق
                 </button>
-                <button type="button" onclick="quickLogin('admin')" class="demo-btn">
-                  <i class="fa-solid fa-shield"></i> أدمن
-                </button>
+
               </div>
             </div>
           </form>
@@ -1453,6 +1473,7 @@
       <header class="dash-header admin-header">
         <div class="dash-user">
           <div class="user-avatar admin-avatar"><i class="fa-solid fa-shield"></i></div>
+          <span id="cloudBadge" class="cloud-badge off"><i class="fa-solid fa-cloud"></i> …</span>
           <div>
             <strong>مدير النظام</strong>
             <span class="user-meta">
@@ -1728,30 +1749,96 @@
             </div>
 
             <div class="setting-card">
-              <h3><i class="fa-solid fa-database"></i> قاعدة البيانات</h3>
+              <h3><i class="fa-solid fa-database"></i> قاعدة البيانات (Firebase)</h3>
               <div id="dbStatusBox" class="support-stats"></div>
-              <p class="muted small">البيانات محفوظة محلياً بشكل دائم: حسابات، رحلات، مستمسكات، إعدادات.</p>
+              <p class="muted small">البيانات مخزّنة في Cloud Firestore وتتزامن لحظياً بين كل الأجهزة، مع نسخة محلية للعمل بدون إنترنت.</p>
+              <div id="setupHint" class="hidden warn-box">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                القاعدة السحابية غير مهيأة بعد. افتح صفحة <a href="setup.html">setup.html</a> لتهيئة البيانات وحساب الإدارة.
+              </div>
+            </div>
+
+            <div class="setting-card wide">
+              <h3><i class="fa-solid fa-headset"></i> معلومات الدعم والتواصل</h3>
+              <p class="muted small">ما تكتبه هنا يظهر مباشرة لكل الزوار والزبائن والسائقين في صفحة "اتصل بنا" وفي تذييل الموقع.</p>
+              <div class="setting-row">
+                <label>رقم الدعم (اتصال)</label>
+                <input type="tel" id="supPhone" placeholder="+964 7XX XXX XXXX" />
+              </div>
+              <div class="setting-row">
+                <label>رقم واتساب الدعم</label>
+                <input type="tel" id="supWhatsapp" placeholder="+964 7XX XXX XXXX" />
+              </div>
+              <div class="setting-row">
+                <label>البريد الإلكتروني للدعم</label>
+                <input type="email" id="supEmail" placeholder="support@example.com" />
+              </div>
+              <div class="setting-row">
+                <label>العنوان</label>
+                <input type="text" id="supAddress" placeholder="الحبوبي، الناصرية، ذي قار" />
+              </div>
+              <div class="setting-row">
+                <label>ساعات العمل</label>
+                <input type="text" id="supHours" placeholder="24/7 - متاحون دائماً" />
+              </div>
+              <div class="setting-row">
+                <label>رابط فيسبوك</label>
+                <input type="url" id="supFacebook" placeholder="https://facebook.com/..." />
+              </div>
+              <div class="setting-row">
+                <label>رابط انستغرام</label>
+                <input type="url" id="supInstagram" placeholder="https://instagram.com/..." />
+              </div>
+              <div class="setting-row">
+                <label>رابط تيليغرام</label>
+                <input type="url" id="supTelegram" placeholder="https://t.me/..." />
+              </div>
+              <div class="setting-row">
+                <label>ملاحظة تظهر للزبائن</label>
+                <input type="text" id="supNote" placeholder="فريق الدعم جاهز على مدار الساعة" />
+              </div>
+              <button class="btn-primary" onclick="saveSupportInfo()">
+                <i class="fa-solid fa-floppy-disk"></i> حفظ معلومات الدعم
+              </button>
+            </div>
+
+            <div class="setting-card wide">
+              <h3><i class="fa-solid fa-ticket"></i> تذاكر الدعم الواردة</h3>
+              <div class="support-stats">
+                <div class="ss-item"><span>مفتوحة</span><strong id="ticketsOpen">0</strong></div>
+                <div class="ss-item"><span>مغلقة</span><strong id="ticketsClosed">0</strong></div>
+                <div class="ss-item"><span>الإجمالي</span><strong id="ticketsTotal">0</strong></div>
+              </div>
+              <div id="ticketsList" class="tickets-list"></div>
             </div>
 
             <div class="setting-card">
-              <h3><i class="fa-solid fa-headset"></i> الدعم الفني</h3>
+              <h3><i class="fa-solid fa-user-shield"></i> حساب الإدارة</h3>
               <div class="support-stats">
-                <div class="ss-item">
-                  <span>تذاكر مفتوحة</span>
-                  <strong>12</strong>
-                </div>
-                <div class="ss-item">
-                  <span>مغلقة اليوم</span>
-                  <strong>34</strong>
-                </div>
-                <div class="ss-item">
-                  <span>متوسط الرد</span>
-                  <strong>3 د</strong>
-                </div>
+                <div class="ss-item"><span>الاسم</span><strong id="adminAccountName">—</strong></div>
+                <div class="ss-item"><span>الصلاحية</span><strong id="adminAccountRole">—</strong></div>
               </div>
-              <button class="btn-secondary" onclick="showPage('contactPage')">
-                <i class="fa-solid fa-ticket"></i> إدارة التذاكر
+              <div class="setting-row">
+                <label>البريد المسجّل</label>
+                <strong id="adminAccountEmail" class="muted">—</strong>
+              </div>
+              <div class="divider"><span>تغيير كلمة المرور</span></div>
+              <div class="setting-row">
+                <label>كلمة المرور الحالية</label>
+                <input type="password" id="adminCurrentPass" autocomplete="current-password" />
+              </div>
+              <div class="setting-row">
+                <label>كلمة المرور الجديدة</label>
+                <input type="password" id="adminNewPass" autocomplete="new-password" placeholder="8 أحرف على الأقل" />
+              </div>
+              <div class="setting-row">
+                <label>تأكيد الجديدة</label>
+                <input type="password" id="adminConfirmPass" autocomplete="new-password" />
+              </div>
+              <button class="btn-primary" onclick="changeAdminPassword()">
+                <i class="fa-solid fa-key"></i> تحديث كلمة المرور
               </button>
+              <p class="muted small">كلمات المرور محفوظة ومشفّرة داخل Firebase Authentication ولا تُخزَّن في الموقع إطلاقاً.</p>
             </div>
           </div>
         </div>
@@ -2153,8 +2240,15 @@
   <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
+  <!-- Firebase (قاعدة البيانات والمصادقة) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <script src="js/firebase-config.js"></script>
+
   <!-- التطبيق -->
   <script src="js/db.js"></script>
+  <script src="js/cloud.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/maps.js"></script>
   <script src="js/app.js"></script>

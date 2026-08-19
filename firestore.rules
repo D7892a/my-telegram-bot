@@ -1,0 +1,124 @@
+rules_version = '2';
+
+/**
+ * قواعد حماية Firestore — تكسي دجلة (الناصرية)
+ * انسخ هذا الملف كاملاً إلى: Firebase Console → Firestore Database → Rules → Publish
+ */
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    function bootstrapOpen() {
+      return !exists(/databases/$(database)/documents/config/bootstrap);
+    }
+
+    function ownsAccount(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    /* ---------- حسابات الإدارة ---------- */
+    match /admins/{uid} {
+      allow read: if signedIn();
+      // أول أدمن فقط يُنشأ مرة واحدة (يُقفل تلقائياً بمستند config/bootstrap)
+      allow create: if ownsAccount(uid) && (bootstrapOpen() || isAdmin());
+      allow update: if isAdmin() && (ownsAccount(uid) || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    /* ---------- ربط uid بالدور والملف الشخصي ---------- */
+    match /accounts/{uid} {
+      allow read: if ownsAccount(uid) || isAdmin();
+      allow create: if isAdmin() ||
+        (ownsAccount(uid) && request.resource.data.role in ['customer', 'driver']) ||
+        (ownsAccount(uid) && request.resource.data.role == 'admin' && bootstrapOpen());
+      allow update, delete: if isAdmin();
+    }
+
+    /* ---------- الزبائن ---------- */
+    match /customers/{id} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow update: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
+      allow delete: if isAdmin();
+    }
+
+    /* ---------- السائقون ---------- */
+    match /drivers/{id} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.status == 'pending';
+      // السائق يعدّل ملفه لكن لا يستطيع اعتماد نفسه، الإدارة وحدها تغيّر الحالة
+      // والزبون يستطيع فقط تحديث التقييم وعدّاد الرحلات بعد انتهاء الرحلة
+      allow update: if isAdmin() ||
+        (signedIn() && resource.data.uid == request.auth.uid
+         && request.resource.data.status == resource.data.status) ||
+        (signedIn() && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['rating', 'trips', 'earnings', 'online', 'location']));
+      allow delete: if isAdmin();
+    }
+
+    /* ---------- مستمسكات السائقين ---------- */
+    match /driverDocs/{docId} {
+      allow read, write: if isAdmin() || signedIn();
+    }
+
+    /* ---------- الرحلات والطلبات ---------- */
+    match /rides/{id} {
+      allow read, create, update: if signedIn();
+      allow delete: if isAdmin();
+    }
+
+    match /pendingRequests/{id} {
+      allow read, create, update, delete: if signedIn();
+    }
+
+    /* ---------- المحفظة والإشعارات ---------- */
+    match /transactions/{id} {
+      allow read, create: if signedIn();
+      allow update, delete: if isAdmin();
+    }
+
+    match /notifications/{id} {
+      allow read, create, update: if signedIn();
+      allow delete: if isAdmin();
+    }
+
+    match /withdrawals/{id} {
+      allow read, create: if signedIn();
+      allow update, delete: if isAdmin();
+    }
+
+    /* ---------- الكوبونات: قراءة عامة، تعديل للإدارة (عدا عدّاد الاستخدام) ---------- */
+    match /promoCodes/{code} {
+      allow read: if true;
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() ||
+        (signedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['usedCount']));
+    }
+
+    /* ---------- تذاكر الدعم: يرسلها أي زائر، تُدار من الإدارة ---------- */
+    match /tickets/{id} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
+    /* ---------- الإعدادات ومعلومات الدعم: قراءة عامة، كتابة للإدارة ---------- */
+    match /config/{docId} {
+      allow read: if true;
+      allow create: if isAdmin() || (docId == 'bootstrap' && signedIn() && bootstrapOpen());
+      allow update, delete: if isAdmin();
+    }
+
+    /* ---------- منع أي شيء آخر ---------- */
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
