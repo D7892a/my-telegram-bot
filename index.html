@@ -554,7 +554,7 @@
           <div class="welcome-bar">
             <div>
               <h2>أهلاً، <span id="greetName">أحمد</span> 👋</h2>
-              <p>وين تبي توصلك اليوم؟</p>
+              <p>وين رايح اليوم؟ حدد الانطلاق والوجهة من الخريطة</p>
             </div>
             <div class="quick-balance" onclick="openWallet()">
               <span>الرصيد</span>
@@ -577,6 +577,7 @@
                 <i class="fa-solid fa-arrow-left"></i>
               </button>
             </div>
+            <div class="home-map-hint">اضغط على الخريطة لاختيار الوجهة وطلب تكسي</div>
             <div id="searchResults" class="search-results hidden"></div>
           </div>
 
@@ -662,6 +663,14 @@
           <!-- الخريطة مع المسار -->
           <div class="book-map-card">
             <div id="bookingMap" class="book-map"></div>
+            <div class="map-mode-bar">
+              <button type="button" id="pickFromBtn" class="active"><i class="fa-solid fa-location-arrow"></i> الانطلاق</button>
+              <button type="button" id="pickToBtn"><i class="fa-solid fa-flag"></i> الوجهة</button>
+              <button type="button" id="clearRouteBtn"><i class="fa-solid fa-eraser"></i> مسح</button>
+            </div>
+            <div id="mapPickHint" class="map-pick-hint">
+              <i class="fa-solid fa-hand-pointer"></i> اضغط على الخريطة لتحديد <strong>نقطة الانطلاق</strong>
+            </div>
             <div class="route-info-bar">
               <div class="route-stat">
                 <i class="fa-solid fa-road"></i>
@@ -684,7 +693,8 @@
               <div class="addr-dot dot-green"></div>
               <div class="addr-input-wrap">
                 <label>نقطة الانطلاق</label>
-                <input type="text" id="bookFrom" placeholder="حدد موقعك الحالي على الخريطة" readonly />
+                <input type="text" id="bookFrom" placeholder="اكتب اسم المنطقة أو اضغط على الخريطة" autocomplete="off" />
+                <div id="fromSuggest" class="suggest-box hidden"></div>
                 <button class="gps-btn" onclick="useCurrentLocation('from')">
                   <i class="fa-solid fa-location-crosshairs"></i> موقعي الحالي
                 </button>
@@ -695,12 +705,24 @@
               <div class="addr-dot dot-red"></div>
               <div class="addr-input-wrap">
                 <label>الوجهة</label>
-                <input type="text" id="bookTo" placeholder="حدد الوجهة على الخريطة" readonly />
+                <input type="text" id="bookTo" placeholder="اكتب الوجهة أو اختر من الأحياء" autocomplete="off" />
+                <div id="toSuggest" class="suggest-box hidden"></div>
                 <button class="gps-btn" onclick="openDestPicker()">
-                  <i class="fa-solid fa-map-marker-alt"></i> اختر من الخريطة
+                  <i class="fa-solid fa-map-marker-alt"></i> اختر من القائمة
                 </button>
               </div>
             </div>
+          </div>
+
+          <div class="section-block">
+            <div class="block-head">
+              <h3><i class="fa-solid fa-city"></i> أحياء بغداد السريعة</h3>
+            </div>
+            <div id="baghdadPlaces" class="baghdad-places"></div>
+          </div>
+
+          <div class="fare-breakdown" id="fareBreakdown">
+            <p class="muted">حدد الانطلاق والوجهة حتى يتحسب المبلغ فوراً</p>
           </div>
 
           <!-- اختيار نوع السيارة -->
@@ -782,9 +804,9 @@
             </div>
           </div>
 
-          <button class="btn-primary big full" onclick="findDriver()">
-            <i class="fa-solid fa-magnifying-glass"></i>
-            ابحث عن سائق
+          <button class="btn-primary big full book-now-btn" onclick="findDriver()">
+            <i class="fa-solid fa-taxi"></i>
+            اطلب تكسي الآن
             <span id="bookBtnPrice">-- د.ع</span>
           </button>
         </div>
@@ -1875,6 +1897,97 @@
       </div>
     </div>
 
+    <!-- مودال اختيار الوجهة -->
+    <div id="destPickerModal" class="modal">
+      <div class="modal-overlay" onclick="closeModal('destPickerModal')"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>اختر الوجهة</h3>
+          <button class="close-btn" onclick="closeModal('destPickerModal')"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="form-group">
+          <input type="text" id="destSearch" placeholder="ابحث عن حي أو معلم في بغداد..." />
+        </div>
+        <div id="destPickerList" class="dest-list"></div>
+      </div>
+    </div>
+
+    <!-- مودال المحفظة -->
+    <div id="walletModal" class="modal">
+      <div class="modal-overlay" onclick="closeModal('walletModal')"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="walletModalTitle">شحن المحفظة</h3>
+          <button class="close-btn" onclick="closeModal('walletModal')"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <input type="hidden" id="walletModalAction" value="topup" />
+        <div class="quick-amounts">
+          <button type="button" onclick="document.getElementById('walletAmount').value=5000">5,000</button>
+          <button type="button" onclick="document.getElementById('walletAmount').value=10000">10,000</button>
+          <button type="button" onclick="document.getElementById('walletAmount').value=25000">25,000</button>
+          <button type="button" onclick="document.getElementById('walletAmount').value=50000">50,000</button>
+        </div>
+        <div class="form-group">
+          <label>المبلغ (د.ع)</label>
+          <input type="number" id="walletAmount" min="1000" step="1000" value="10000" />
+        </div>
+        <button class="btn-primary full" onclick="confirmWalletAction()">
+          <i class="fa-solid fa-check"></i> تأكيد العملية
+        </button>
+      </div>
+    </div>
+
+    <!-- مودال المحادثة -->
+    <div id="chatModal" class="modal">
+      <div class="modal-overlay" onclick="closeModal('chatModal')"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>محادثة السائق</h3>
+          <button class="close-btn" onclick="closeModal('chatModal')"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div id="chatMessages" class="chat-messages"></div>
+        <div class="chat-compose">
+          <input type="text" id="chatInput" placeholder="اكتب رسالة..." onkeydown="if(event.key==='Enter'){sendChat();}" />
+          <button class="btn-primary" onclick="sendChat()"><i class="fa-solid fa-paper-plane"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- مودال العناوين -->
+    <div id="addressesModal" class="modal">
+      <div class="modal-overlay" onclick="closeModal('addressesModal')"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>العناوين المحفوظة</h3>
+          <button class="close-btn" onclick="closeModal('addressesModal')"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div id="addressesList" class="dest-list"></div>
+        <div class="form-group">
+          <label>اسم المكان</label>
+          <input type="text" id="newAddressName" placeholder="البيت، العمل..." />
+        </div>
+        <div class="form-group">
+          <label>العنوان</label>
+          <input type="text" id="newAddressText" placeholder="الكرادة، شارع 62" />
+        </div>
+        <button class="btn-primary full" onclick="saveNewAddress()">
+          <i class="fa-solid fa-plus"></i> حفظ عنوان جديد
+        </button>
+      </div>
+    </div>
+
+    <!-- مودال الكوبونات -->
+    <div id="promoModal" class="modal">
+      <div class="modal-overlay" onclick="closeModal('promoModal')"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>الكوبونات المتاحة</h3>
+          <button class="close-btn" onclick="closeModal('promoModal')"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div id="promoList" class="promo-list"></div>
+      </div>
+    </div>
+
     <!-- مودال توست -->
     <div id="toast" class="toast"></div>
   </div>
@@ -1901,6 +2014,7 @@
   <script src="js/db.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/maps.js"></script>
+  <script src="js/app.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

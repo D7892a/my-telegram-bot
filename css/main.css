@@ -1336,6 +1336,21 @@ input, select, textarea { font-family: inherit; }
   justify-content: center;
 }
 
+.home-map-hint {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  left: 72px;
+  background: rgba(17, 24, 39, .86);
+  color: #fff;
+  border-radius: 12px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  z-index: 6;
+  pointer-events: none;
+}
+
 .search-results {
   position: absolute;
   top: 64px;
@@ -1514,7 +1529,8 @@ input, select, textarea { font-family: inherit; }
 
 .book-map {
   width: 100%;
-  height: 240px;
+  height: 300px;
+  min-height: 260px;
 }
 
 .route-info-bar {
@@ -1823,6 +1839,10 @@ input, select, textarea { font-family: inherit; }
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
+}
+
+.trip-actions .btn-primary {
+  grid-column: 1 / -1;
 }
 
 /* ============== شاشة الرحلات ============== */
@@ -2927,7 +2947,7 @@ input, select, textarea { font-family: inherit; }
   padding: 20px;
 }
 
-.modal.show { display: flex; }
+.modal.show, .modal.active { display: flex; }
 
 .modal-overlay {
   position: absolute;
@@ -3315,6 +3335,204 @@ input, select, textarea { font-family: inherit; }
 }
 
 /* ============== استجابة ============== */
+@media (max-width: 480px) {
+  .hero-stats { gap: 20px; }
+  .hero-stats strong { font-size: 20px; }
+  .section-head h2 { font-size: 24px; }
+  .trip-status-bar { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .trip-step:nth-child(2)::before, .trip-step:nth-child(4)::before { display: none; }
+  .admin-stat-card { padding: 14px; }
+  .asc-icon { width: 44px; height: 44px; font-size: 20px; }
+  .asc-info h3 { font-size: 18px; }
+}
+  text-align: right;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+}
+
+.suggest-item:hover, .dest-item:hover { background: var(--primary-light); }
+.suggest-item i, .dest-item i { color: var(--primary); }
+.suggest-item strong, .dest-item strong { display: block; font-size: 13px; }
+.suggest-item small, .dest-item small { display: block; font-size: 11px; color: var(--text-light); }
+
+.map-mode-bar {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 6px;
+  padding: 10px;
+  background: var(--bg-card);
+}
+
+.map-mode-bar button {
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--bg-soft);
+  font-size: 12px;
+  font-weight: 800;
+  border: 1px solid var(--border);
+}
+
+.map-mode-bar button.active {
+  background: var(--gradient-primary);
+  color: var(--dark);
+  border-color: transparent;
+}
+
+.map-pick-hint {
+  margin: 0 10px 10px;
+  padding: 10px 12px;
+  background: var(--primary-light);
+  color: var(--text);
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.baghdad-places {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.place-chip {
+  padding: 8px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.place-chip:hover, .place-chip:focus {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+
+.place-chip i { color: var(--primary); }
+
+.fare-breakdown {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+
+.fb-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  font-size: 13px;
+}
+
+.fb-row.save { color: var(--success); }
+.fb-row.total {
+  border-top: 1px dashed var(--border);
+  margin-top: 6px;
+  padding-top: 10px;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.fb-row.total strong { color: var(--primary-dark); font-size: 18px; }
+
+.book-now-btn { position: relative; gap: 10px; }
+.book-now-btn #bookBtnPrice {
+  background: rgba(0,0,0,.12);
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 13px;
+}
+
+.dest-list { display: flex; flex-direction: column; max-height: 280px; overflow: auto; margin-bottom: 12px; }
+
+.quick-amounts {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.quick-amounts button {
+  padding: 10px 6px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 12px;
+}
+
+.quick-amounts button:hover { background: var(--primary); color: var(--dark); }
+
+.chat-messages {
+  min-height: 180px;
+  max-height: 280px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.chat-bubble {
+  max-width: 80%;
+  padding: 8px 12px;
+  border-radius: 14px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.chat-bubble.them { background: var(--bg-soft); align-self: flex-start; }
+.chat-bubble.me { background: var(--primary); color: var(--dark); align-self: flex-end; }
+
+.chat-compose { display: flex; gap: 8px; }
+.chat-compose input {
+  flex: 1;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.promo-list { display: flex; flex-direction: column; gap: 8px; }
+.promo-pick {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px;
+  background: var(--bg-soft);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  font-weight: 800;
+}
+
+.promo-pick:hover { border-color: var(--primary); background: var(--primary-light); }
+
+.empty-state {
+  text-align: center;
+  padding: 30px 16px;
+  color: var(--text-light);
+  background: var(--bg-card);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+}
+
+.dijla-marker { background: transparent !important; border: none !important; }
+.dot-green { background: var(--success); }
+.dot-red { background: var(--danger); }
+
+.notification-item {
+  background: var(--bg-soft);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 8px;
+}
+
+.notification-item p { color: var(--text-light); font-size: 12px; margin-top: 4px; }
+
 @media (max-width: 480px) {
   .hero-stats { gap: 20px; }
   .hero-stats strong { font-size: 20px; }

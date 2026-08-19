@@ -91,7 +91,8 @@
       showPage('customerApp');
       window.setTimeout(() => {
         if (window.L && window.Maps) Maps.initCustomerMap?.();
-      }, 100);
+        window.App?.onEnterDashboard?.(session, user);
+      }, 120);
     } else if (session.role === 'driver') {
       fillText('driverAvatar', user.firstName?.[0] || 'س');
       fillText('driverName', `${user.firstName} ${user.lastName}`);
@@ -99,9 +100,11 @@
       showPage('driverApp');
       window.setTimeout(() => {
         if (window.L && window.Maps) Maps.initDriverMap?.();
-      }, 100);
+        window.App?.onEnterDashboard?.(session, user);
+      }, 120);
     } else {
       showPage('adminApp');
+      window.setTimeout(() => window.App?.onEnterDashboard?.(session, user), 80);
     }
   }
 
@@ -142,22 +145,27 @@
     if (!dashboard) return;
     all('.dash-tab', dashboard).forEach((tab) => tab.classList.remove('active'));
     target.classList.add('active');
-    all('.bnav-btn', dashboard).forEach((button) => button.classList.remove('active'));
-    sourceButton?.classList.add('active');
+    all('.bnav-btn', dashboard).forEach((button) => {
+      button.classList.toggle('active', button === sourceButton || button.dataset.tab === tabId);
+    });
 
     window.setTimeout(() => {
-      if (!window.L || !window.Maps) return;
-      if (tabId === 'custBook') Maps.initBookingMap?.();
-      if (tabId === 'driverHome') Maps.initDriverMap?.();
-    }, 100);
+      if (window.L && window.Maps) {
+        if (tabId === 'custBook') Maps.initBookingMap?.();
+        if (tabId === 'custHome') Maps.initCustomerMap?.();
+        if (tabId === 'custTrip') Maps.initTrackingMap?.();
+        if (tabId === 'driverHome') Maps.initDriverMap?.();
+      }
+      window.App?.onTabChange?.(tabId);
+    }, 80);
   }
 
   function openModal(id) {
-    byId(id)?.classList.add('active');
+    byId(id)?.classList.add('active', 'show');
   }
 
   function closeModal(id) {
-    byId(id)?.classList.remove('active');
+    byId(id)?.classList.remove('active', 'show');
   }
 
   function openNotifications() {
@@ -177,6 +185,7 @@
     const root = document.documentElement;
     const dark = root.dataset.theme !== 'dark';
     root.dataset.theme = dark ? 'dark' : 'light';
+    byId('darkModeSwitch')?.classList.toggle('on', dark);
     try { localStorage.setItem('dijla_theme', root.dataset.theme); } catch (_) {}
   }
 

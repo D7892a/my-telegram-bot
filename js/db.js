@@ -452,6 +452,55 @@ const DB = (() => {
       save(data);
     },
 
+    getDrivers: () => data.users.drivers,
+    getCustomers: () => data.users.customers,
+    getRides: () => data.rides,
+    getPromoCodes: () => data.promoCodes,
+
+    addPendingRequest: (request) => {
+      if (!data.pendingRequests) data.pendingRequests = [];
+      request.id = request.id || Date.now();
+      request.createdAt = new Date().toISOString();
+      data.pendingRequests.unshift(request);
+      save(data);
+      return request;
+    },
+
+    getPendingRequests: () => data.pendingRequests || [],
+
+    clearPendingRequest: (id) => {
+      data.pendingRequests = (data.pendingRequests || []).filter((r) => r.id !== id);
+      save(data);
+    },
+
+    updateCustomer: (id, updates) => {
+      const customer = data.users.customers.find((c) => c.id === id);
+      if (customer) {
+        Object.assign(customer, updates);
+        save(data);
+      }
+      return customer;
+    },
+
+    updateDriver: (id, updates) => {
+      const driver = data.users.drivers.find((d) => d.id === id);
+      if (driver) {
+        Object.assign(driver, updates);
+        save(data);
+      }
+      return driver;
+    },
+
+    saveAddress: (customerId, address) => {
+      const customer = data.users.customers.find((c) => c.id === customerId);
+      if (!customer) return null;
+      if (!customer.addresses) customer.addresses = [];
+      address.id = Math.max(0, ...customer.addresses.map((a) => a.id || 0)) + 1;
+      customer.addresses.push(address);
+      save(data);
+      return address;
+    },
+
     // إعادة تعيين
     reset: () => {
       localStorage.removeItem(STORAGE_KEY);
