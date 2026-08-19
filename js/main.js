@@ -357,6 +357,7 @@
         window.App?.onCloudSync?.();
       });
       await Cloud.start();
+      await window.AdminBootstrap?.run?.();
       window.App?.applySupportInfo?.();
       window.App?.renderCloudBanner?.();
     }
