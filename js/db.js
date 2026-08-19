@@ -5,10 +5,10 @@
 const DB = (() => {
   'use strict';
 
-  const STORAGE_KEY = 'dijla_taxi_db_v2_nasiriyah';
-  const LEGACY_KEYS = ['dijla_taxi_db_v1', 'dijla_taxi_db'];
+  const STORAGE_KEY = 'dijla_taxi_db_v3_nasiriyah';
+  const LEGACY_KEYS = ['dijla_taxi_db_v2_nasiriyah', 'dijla_taxi_db_v1', 'dijla_taxi_db'];
   const FILES_DB = 'dijla_files_v2';
-  const SCHEMA_VERSION = 2;
+  const SCHEMA_VERSION = 3;
 
   const CITY = {
     name: 'الناصرية',
@@ -215,9 +215,7 @@ const DB = (() => {
           }
         }
       ],
-      admins: [
-        { id: 999, name: 'مدير النظام', email: 'admin@dijla.iq', password: 'admin', role: 'super_admin' }
-      ]
+      admins: []
     },
     rides: [],
     transactions: [
@@ -253,6 +251,17 @@ const DB = (() => {
       recordAudio: false,
       verifyCustomer: true,
       language: 'ar'
+    },
+    support: {
+      phone: '+964 770 123 4567',
+      whatsapp: '+964 770 123 4567',
+      email: 'info@dijla-taxi.iq',
+      address: 'الحبوبي، الناصرية، ذي قار',
+      hours: '24/7 - متاحون دائماً',
+      facebook: '',
+      instagram: '',
+      telegram: '',
+      note: 'فريق الدعم جاهز للرد على استفساراتك على مدار الساعة'
     },
     notifications: [
       { id: 1, userId: 1, userType: 'customer', title: 'أهلاً بك في الناصرية', message: 'تكسي دجلة يخدم الناصرية فقط حالياً. اطلب رحلتك من أي حي داخل المدينة.', type: 'system', read: false, createdAt: '2026-08-18 09:00' },
@@ -358,6 +367,9 @@ const DB = (() => {
         const parsed = JSON.parse(stored);
         if (parsed && parsed.version === SCHEMA_VERSION && parsed.city === CITY.name && !looksLikeBaghdad(parsed)) {
           parsed.settings = { ...initialData.settings, ...(parsed.settings || {}) };
+          parsed.support = { ...initialData.support, ...(parsed.support || {}) };
+          parsed.users = parsed.users || { customers: [], drivers: [], admins: [] };
+          parsed.users.admins = parsed.users.admins || [];
           parsed.pricing = { ...initialData.pricing, ...(parsed.pricing || {}) };
           parsed.pendingRequests = parsed.pendingRequests || [];
           parsed.tickets = parsed.tickets || [];
@@ -467,6 +479,7 @@ const DB = (() => {
     findCustomerByEmail: (email) => data.users.customers.find((c) => c.email.toLowerCase() === String(email).toLowerCase()),
     findDriverByEmail: (email) => data.users.drivers.find((d) => d.email.toLowerCase() === String(email).toLowerCase()),
     findAdminByEmail: (email) => data.users.admins.find((a) => a.email.toLowerCase() === String(email).toLowerCase()),
+    findAdminById: (id) => data.users.admins.find((a) => String(a.id) === String(id)),
     findCustomerById: (id) => data.users.customers.find((c) => c.id === id),
     findDriverById: (id) => data.users.drivers.find((d) => d.id === id),
 
@@ -606,14 +619,15 @@ const DB = (() => {
     },
 
     getUserNotifications: (userId, userType) => data.notifications
-      .filter((n) => n.userId === userId && n.userType === userType)
+      .filter((n) => (userType === 'admin' ? n.userType === 'admin' : (n.userId === userId && n.userType === userType)))
       .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))),
 
     markAllNotificationsRead: (userId, userType) => {
-      data.notifications
-        .filter((n) => n.userId === userId && n.userType === userType)
-        .forEach((n) => { n.read = true; });
+      const touched = data.notifications
+        .filter((n) => (userType === 'admin' ? n.userType === 'admin' : (n.userId === userId && n.userType === userType)));
+      touched.forEach((n) => { n.read = true; });
       save();
+      return touched;
     },
 
     getPricing: () => data.pricing,
@@ -627,6 +641,65 @@ const DB = (() => {
       save();
       return data.pricing;
     },
+
+    getSupport: () => data.support,
+    updateSupport: (updates) => {
+      data.support = { ...data.support, ...updates };
+      save();
+      return data.support;
+    },
+
+    upsertAdmin: (admin) => {
+      data.users.admins = data.users.admins || [];
+      const index = data.users.admins.findIndex((a) => String(a.id) === String(admin.id));
+      if (index >= 0) {
+        data.users.admins[index] = { ...data.users.admins[index], ...admin };
+      } else {
+        data.users.admins.push(admin);
+      }
+      save();
+      return data.users.admins.find((a) => String(a.id) === String(admin.id));
+    },
+
+    upsertCustomer: (customer) => {
+      const index = data.users.customers.findIndex((c) => String(c.id) === String(customer.id));
+      if (index >= 0) data.users.customers[index] = { ...data.users.customers[index], ...customer };
+      else data.users.customers.push(customer);
+      save();
+      return data.users.customers.find((c) => String(c.id) === String(customer.id));
+    },
+
+    upsertDriver: (driver) => {
+      const index = data.users.drivers.findIndex((d) => String(d.id) === String(driver.id));
+      if (index >= 0) data.users.drivers[index] = { ...data.users.drivers[index], ...driver };
+      else data.users.drivers.push(driver);
+      save();
+      return data.users.drivers.find((d) => String(d.id) === String(driver.id));
+    },
+
+    nextIdFor: (collection) => {
+      const map = {
+        customers: () => nextId(data.users.customers),
+        drivers: () => nextId(data.users.drivers, 300),
+        rides: () => nextId(data.rides, 8000),
+        transactions: () => nextId(data.transactions),
+        notifications: () => nextId(data.notifications),
+        tickets: () => nextId(data.tickets),
+        withdrawals: () => nextId(data.withdrawals)
+      };
+      return (map[collection] || (() => Date.now()))();
+    },
+
+    updateTicket: (id, updates) => {
+      const ticket = (data.tickets || []).find((t) => String(t.id) === String(id));
+      if (ticket) {
+        Object.assign(ticket, updates);
+        save();
+      }
+      return ticket;
+    },
+
+    persistNow: save,
 
     getSettings: () => data.settings,
     updateSettings: (updates) => {

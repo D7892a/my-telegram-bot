@@ -72,7 +72,7 @@ const App = (() => {
     if (!session || !window.DB) return null;
     if (session.role === 'customer') return DB.findCustomerById(session.userId);
     if (session.role === 'driver') return DB.findDriverById(session.userId);
-    if (session.role === 'admin') return DB.findAdminByEmail('admin@dijla.iq');
+    if (session.role === 'admin') return DB.findAdminById(session.userId) || DB.findAdminByEmail(session.email || '');
     return null;
   }
 
@@ -1389,6 +1389,184 @@ const App = (() => {
     toast('تم حفظ الحساب البنكي', 'success');
   }
 
+
+  /* ========== معلومات الدعم والتواصل (يتحكم بها الأدمن) ========== */
+  function digitsOnly(value) {
+    return String(value || '').replace(/[^\d+]/g, '');
+  }
+
+  function waLink(value) {
+    const n = digitsOnly(value).replace(/^\+/, '').replace(/^00/, '');
+    return n ? `https://wa.me/${n}` : '';
+  }
+
+  function applySupportInfo() {
+    const s = DB.getSupport?.() || {};
+    all('[data-support]').forEach((el) => {
+      const key = el.dataset.support;
+      const value = s[key];
+      const mode = el.dataset.supportAs;
+      if (!value) {
+        if (mode === 'hide-empty') el.classList.add('hidden');
+        return;
+      }
+      el.classList.remove('hidden');
+      if (mode === 'tel') {
+        el.href = `tel:${digitsOnly(value)}`;
+        const label = el.querySelector('[data-support-text]');
+        if (label) label.textContent = value; else el.textContent = value;
+      } else if (mode === 'mailto') {
+        el.href = `mailto:${value}`;
+        const label = el.querySelector('[data-support-text]');
+        if (label) label.textContent = value; else el.textContent = value;
+      } else if (mode === 'whatsapp') {
+        const link = waLink(value);
+        if (link) el.href = link; else el.classList.add('hidden');
+      } else if (mode === 'link') {
+        el.href = value;
+      } else {
+        el.textContent = value;
+      }
+    });
+  }
+
+  function fillSupportForm() {
+    const s = DB.getSupport?.() || {};
+    const map = {
+      supPhone: 'phone', supWhatsapp: 'whatsapp', supEmail: 'email',
+      supAddress: 'address', supHours: 'hours', supFacebook: 'facebook',
+      supInstagram: 'instagram', supTelegram: 'telegram', supNote: 'note'
+    };
+    Object.entries(map).forEach(([id, key]) => {
+      const el = byId(id);
+      if (el) el.value = s[key] || '';
+    });
+  }
+
+  function saveSupportInfo() {
+    const session = currentSession();
+    if (session?.role !== 'admin') return toast('هذا الإجراء للإدارة فقط', 'error');
+    const email = byId('supEmail')?.value.trim() || '';
+    if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      return toast('صيغة البريد الإلكتروني غير صحيحة', 'error');
+    }
+    DB.updateSupport({
+      phone: byId('supPhone')?.value.trim() || '',
+      whatsapp: byId('supWhatsapp')?.value.trim() || '',
+      email,
+      address: byId('supAddress')?.value.trim() || '',
+      hours: byId('supHours')?.value.trim() || '',
+      facebook: byId('supFacebook')?.value.trim() || '',
+      instagram: byId('supInstagram')?.value.trim() || '',
+      telegram: byId('supTelegram')?.value.trim() || '',
+      note: byId('supNote')?.value.trim() || ''
+    });
+    applySupportInfo();
+    toast(window.Cloud?.online
+      ? 'تم حفظ معلومات الدعم في قاعدة البيانات وظهرت للجميع'
+      : 'تم الحفظ محلياً (بدون اتصال بقاعدة البيانات)', 'success');
+  }
+
+  function supportCall() {
+    const phone = DB.getSupport?.()?.phone;
+    if (!phone) return toast('لم يتم ضبط رقم الدعم بعد', 'error');
+    window.location.href = `tel:${digitsOnly(phone)}`;
+  }
+
+  function supportWhatsapp() {
+    const s = DB.getSupport?.() || {};
+    const link = waLink(s.whatsapp || s.phone);
+    if (!link) return toast('لم يتم ضبط رقم واتساب الدعم', 'error');
+    window.open(link, '_blank');
+  }
+
+  function supportEmail() {
+    const email = DB.getSupport?.()?.email;
+    if (!email) return toast('لم يتم ضبط بريد الدعم', 'error');
+    window.location.href = `mailto:${email}`;
+  }
+
+  /* ========== حالة السحابة وتذاكر الدعم ========== */
+  function renderCloudBanner() {
+    const badge = byId('cloudBadge');
+    if (badge) {
+      const cloud = window.Cloud;
+      const online = cloud?.online && cloud?.seeded;
+      badge.className = `cloud-badge ${online ? 'ok' : (cloud?.online ? 'warn' : 'off')}`;
+      badge.innerHTML = `<i class="fa-solid fa-${online ? 'cloud-arrow-up' : 'triangle-exclamation'}"></i> ${cloud?.statusText?.() || 'محلي'}`;
+    }
+    const setup = byId('setupHint');
+    if (setup) setup.classList.toggle('hidden', !(window.Cloud?.enabled && window.Cloud?.online && !window.Cloud?.seeded));
+  }
+
+  function renderTickets() {
+    const box = byId('ticketsList');
+    const tickets = DB.getTickets?.() || [];
+    const open = tickets.filter((t) => t.status !== 'closed');
+    if (byId('ticketsOpen')) byId('ticketsOpen').textContent = open.length;
+    if (byId('ticketsTotal')) byId('ticketsTotal').textContent = tickets.length;
+    if (byId('ticketsClosed')) byId('ticketsClosed').textContent = tickets.length - open.length;
+    if (!box) return;
+    box.innerHTML = tickets.length ? tickets.slice(0, 12).map((t) => `
+      <div class="ticket-row ${t.status === 'closed' ? 'closed' : ''}">
+        <div class="ticket-main">
+          <strong>${t.name || 'زائر'} — ${t.subject || 'استفسار'}</strong>
+          <span class="muted">${t.email || ''} • ${t.createdAt || ''}</span>
+          <p>${t.message || ''}</p>
+        </div>
+        ${t.status === 'closed' ? '<span class="trip-status completed">مغلقة</span>'
+          : `<button class="btn-secondary" data-ticket="${t.id}">إغلاق</button>`}
+      </div>
+    `).join('') : '<div class="empty-state">لا توجد تذاكر دعم بعد</div>';
+    box.querySelectorAll('[data-ticket]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        DB.updateTicket(btn.dataset.ticket, { status: 'closed', closedAt: new Date().toISOString() });
+        renderTickets();
+        toast('تم إغلاق التذكرة', 'success');
+      });
+    });
+  }
+
+  function fillAdminAccountCard() {
+    const session = currentSession();
+    const admin = currentUser();
+    if (byId('adminAccountEmail')) byId('adminAccountEmail').textContent = session?.email || admin?.email || '—';
+    if (byId('adminAccountName')) byId('adminAccountName').textContent = admin?.name || 'مدير النظام';
+    if (byId('adminAccountRole')) byId('adminAccountRole').textContent = admin?.role === 'super_admin' ? 'مدير عام' : 'مشرف';
+  }
+
+  async function changeAdminPassword() {
+    const current = byId('adminCurrentPass')?.value || '';
+    const next = byId('adminNewPass')?.value || '';
+    const confirm = byId('adminConfirmPass')?.value || '';
+    if (!current || !next) return toast('أكمل الحقول', 'error');
+    if (next !== confirm) return toast('تأكيد كلمة المرور غير مطابق', 'error');
+    const result = await Auth.changePassword(current, next);
+    toast(result.message, result.success ? 'success' : 'error');
+    if (result.success) {
+      ['adminCurrentPass', 'adminNewPass', 'adminConfirmPass'].forEach((id) => {
+        const el = byId(id); if (el) el.value = '';
+      });
+    }
+  }
+
+  function onCloudSync() {
+    const session = currentSession();
+    renderCloudBanner();
+    if (!session) return;
+    if (session.role === 'admin' && byId('adminApp')?.classList.contains('active')) {
+      renderAdmin();
+    } else if (session.role === 'driver' && byId('driverApp')?.classList.contains('active')) {
+      refreshDriverHeader();
+      renderDriverTrips();
+      showIncomingFromPending();
+    } else if (session.role === 'customer' && byId('customerApp')?.classList.contains('active')) {
+      refreshCustomerHeader();
+      renderCustomerTrips();
+      renderWallet();
+    }
+  }
+
   /* ========== الأدمن ========== */
   function renderAdmin() {
     const rides = DB.getRides();
@@ -1427,19 +1605,29 @@ const App = (() => {
     renderAdminUsers();
     fillPricingForm();
     fillSettingsForm();
+    fillSupportForm();
+    fillAdminAccountCard();
+    renderTickets();
     drawAdminCharts();
     renderDbStatus();
+    renderCloudBanner();
   }
 
   function renderDbStatus() {
     const box = byId('dbStatusBox');
     if (!box) return;
     const snap = DB.getData();
+    const cloud = window.Cloud;
+    const lastSync = cloud?.state?.lastSync ? new Date(cloud.state.lastSync).toLocaleTimeString('en-GB') : '—';
     box.innerHTML = `
       <div class="ss-item"><span>الزبائن</span><strong>${snap.users.customers.length}</strong></div>
       <div class="ss-item"><span>السائقون</span><strong>${snap.users.drivers.length}</strong></div>
       <div class="ss-item"><span>الرحلات</span><strong>${snap.rides.length}</strong></div>
-      <div class="ss-item"><span>المدينة</span><strong>${snap.city}</strong></div>
+      <div class="ss-item"><span>التذاكر</span><strong>${(snap.tickets || []).length}</strong></div>
+      <div class="ss-item"><span>المزود</span><strong>${cloud?.enabled ? 'Firebase' : 'محلي'}</strong></div>
+      <div class="ss-item"><span>المشروع</span><strong>${cloud?.state?.project || '—'}</strong></div>
+      <div class="ss-item"><span>الحالة</span><strong>${cloud?.statusText?.() || 'محلي'}</strong></div>
+      <div class="ss-item"><span>آخر مزامنة</span><strong>${lastSync}</strong></div>
     `;
   }
 
@@ -1912,6 +2100,7 @@ const App = (() => {
 
   function init() {
     bindEvents();
+    applySupportInfo();
     renderCityPlaces();
     updatePickHint();
     renderFare();
@@ -1972,7 +2161,16 @@ const App = (() => {
     saveBankAccount,
     captureRegisterDoc,
     takePendingDocs,
-    viewDocument
+    viewDocument,
+    applySupportInfo,
+    saveSupportInfo,
+    supportCall,
+    supportWhatsapp,
+    supportEmail,
+    changeAdminPassword,
+    renderCloudBanner,
+    renderTickets,
+    onCloudSync
   };
 })();
 
@@ -2020,5 +2218,10 @@ Object.assign(window, {
   openPaymentMethods: () => App.openPaymentMethods(),
   openDriverDocs: () => App.openDriverDocs(),
   openBankAccount: () => App.openBankAccount(),
-  saveBankAccount: () => App.saveBankAccount()
+  saveBankAccount: () => App.saveBankAccount(),
+  saveSupportInfo: () => App.saveSupportInfo(),
+  supportCall: () => App.supportCall(),
+  supportWhatsapp: () => App.supportWhatsapp(),
+  supportEmail: () => App.supportEmail(),
+  changeAdminPassword: () => App.changeAdminPassword()
 });

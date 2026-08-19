@@ -61,7 +61,7 @@
     if (!session || !window.DB) return null;
     if (session.role === 'customer') return DB.findCustomerById(session.userId);
     if (session.role === 'driver') return DB.findDriverById(session.userId);
-    if (session.role === 'admin') return DB.findAdminByEmail('admin@dijla.iq');
+    if (session.role === 'admin') return DB.findAdminById(session.userId) || DB.findAdminByEmail(session.email || '');
     return null;
   }
 
@@ -114,16 +114,37 @@
     enterDashboard(Auth.getSession(), result.user || userForSession(Auth.getSession()));
   }
 
-  function quickLogin(role) {
+  async function quickLogin(role) {
     if (!window.Auth) return toast('تعذر تشغيل نظام تسجيل الدخول', 'error');
-    handleAuthResult(Auth.quickLogin(role), role);
+    toast('جارِ الدخول...', 'info');
+    handleAuthResult(await Auth.quickLogin(role), role);
   }
 
-  function logout() {
+  async function logout() {
     window.Maps?.stopTracking?.();
-    window.Auth?.logout();
+    await window.Auth?.logout();
     showPage('landingPage');
     toast('تم تسجيل الخروج', 'success');
+  }
+
+  function setFormBusy(form, busy, busyLabel) {
+    const button = form?.querySelector('button[type="submit"]');
+    if (!button) return;
+    if (busy) {
+      button.dataset.originalHtml = button.dataset.originalHtml || button.innerHTML;
+      button.disabled = true;
+      button.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${busyLabel || 'جارٍ التنفيذ...'}`;
+    } else {
+      button.disabled = false;
+      if (button.dataset.originalHtml) button.innerHTML = button.dataset.originalHtml;
+    }
+  }
+
+  async function forgotPassword() {
+    const email = byId('loginEmail')?.value.trim();
+    if (!email) return toast('اكتب بريدك الإلكتروني في الحقل أولاً', 'error');
+    const result = await Auth.sendReset(email);
+    toast(result.message, result.success ? 'success' : 'error');
   }
 
   let toastTimer;
@@ -244,20 +265,32 @@
       button.addEventListener('click', () => switchDashboardTab(button.dataset.tab, button));
     });
 
-    byId('loginForm')?.addEventListener('submit', (event) => {
+    byId('loginForm')?.addEventListener('submit', async (event) => {
       event.preventDefault();
+      const form = event.target;
       const email = byId('loginEmail')?.value.trim();
       const password = byId('loginPassword')?.value;
-      const role = email === 'admin@dijla.iq' ? 'admin' :
-        window.DB?.findDriverByEmail(email) ? 'driver' : 'customer';
-      handleAuthResult(Auth.login(email, password, role), role);
+      const roleHint = window.DB?.findDriverByEmail(email) ? 'driver' : 'customer';
+      setFormBusy(form, true, 'جارِ التحقق...');
+      try {
+        const result = await Auth.login(email, password, roleHint);
+        if (result?.success) {
+          const passwordField = byId('loginPassword');
+          if (passwordField) passwordField.value = '';
+        }
+        handleAuthResult(result, roleHint);
+      } finally {
+        setFormBusy(form, false);
+      }
     });
 
-    byId('registerForm')?.addEventListener('submit', (event) => {
+    byId('registerForm')?.addEventListener('submit', async (event) => {
       event.preventDefault();
+      const form = event.target;
       const role = byId('registerRole')?.value || 'customer';
       const docs = window.App?.takePendingDocs?.() || {};
-      const result = Auth.register({
+      setFormBusy(form, true, 'جارِ إنشاء الحساب...');
+      const result = await Auth.register({
         firstName: byId('regFirstName')?.value.trim(),
         lastName: byId('regLastName')?.value.trim(),
         email: byId('regEmail')?.value.trim(),
@@ -268,12 +301,12 @@
         plate: byId('regPlate')?.value.trim(),
         license: byId('regLicense')?.value.trim(),
         documents: docs
-      }, role);
+      }, role).finally(() => setFormBusy(form, false));
 
       if (!result.success) return toast(result.message, 'error');
-      toast(result.pending ? result.message : 'تم إنشاء الحساب، يمكنك تسجيل الدخول الآن', 'success');
+      toast(result.pending ? result.message : 'تم إنشاء حسابك في قاعدة البيانات، سجّل الدخول الآن', 'success');
       selectAuthTab('login');
-      event.target.reset();
+      form.reset();
       all('#driverFields .upload-box').forEach((box) => {
         box.classList.remove('uploaded');
         const small = box.querySelector('small');
@@ -295,7 +328,7 @@
     });
   }
 
-  function init() {
+  async function init() {
     try {
       const savedTheme = localStorage.getItem('dijla_theme');
       if (savedTheme) document.documentElement.dataset.theme = savedTheme;
@@ -305,14 +338,25 @@
     window.App?.init?.();
     revealApp();
 
-    const session = window.Auth?.getSession();
+    if (window.Cloud?.enabled) {
+      Cloud.subscribe(() => {
+        window.App?.applySupportInfo?.();
+        window.App?.onCloudSync?.();
+      });
+      await Cloud.start();
+      window.App?.applySupportInfo?.();
+      window.App?.renderCloudBanner?.();
+    }
+
+    const session = window.Auth?.restore ? await Auth.restore() : window.Auth?.getSession();
     if (session) enterDashboard(session);
+    window.App?.applySupportInfo?.();
   }
 
   Object.assign(window, {
     revealApp, showPage, openAuth, quickLogin, logout, toast,
     closeModal, openNotifications, toggleDarkMode, mockUpload,
-    submitContact,
+    submitContact, forgotPassword,
     switchCustTab: (id) => switchDashboardTab(id),
     switchAdminTab: (id) => switchDashboardTab(id),
     openWallet: () => switchDashboardTab('custWallet')

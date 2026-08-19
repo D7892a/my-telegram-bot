@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>تهيئة قاعدة البيانات | تكسي دجلة</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <style>
+    :root { --bg:#0f172a; --card:#1e293b; --line:#334155; --txt:#e2e8f0; --muted:#94a3b8; --gold:#f4c430; --ok:#22c55e; --err:#ef4444; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family:'Cairo',sans-serif; background:var(--bg); color:var(--txt); padding:24px; }
+    .wrap { max-width: 760px; margin: 0 auto; }
+    h1 { font-size: 24px; display:flex; align-items:center; gap:10px; }
+    h1 i { color: var(--gold); }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:20px; margin-bottom:18px; }
+    .card h2 { font-size:17px; margin:0 0 6px; display:flex; align-items:center; gap:8px; }
+    .card p.hint { color:var(--muted); font-size:13px; line-height:1.9; margin:0 0 14px; }
+    label { display:block; font-size:13px; margin:12px 0 6px; color:var(--muted); }
+    input { width:100%; padding:11px 14px; border-radius:10px; border:1px solid var(--line); background:#0b1220; color:var(--txt); font-family:inherit; font-size:14px; }
+    input:focus { outline:none; border-color:var(--gold); }
+    button { margin-top:16px; width:100%; padding:12px; border:0; border-radius:10px; background:var(--gold); color:#111; font-weight:800; font-family:inherit; font-size:15px; cursor:pointer; }
+    button.sec { background:transparent; border:1px solid var(--line); color:var(--txt); }
+    button:disabled { opacity:.5; cursor:not-allowed; }
+    .row { display:flex; gap:10px; }
+    .row button { flex:1; }
+    .status { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:700; padding:10px 14px; border-radius:10px; background:#0b1220; }
+    .status.ok { color:var(--ok); } .status.err { color:var(--err); } .status.warn { color:var(--gold); }
+    .log { background:#0b1220; border-radius:10px; padding:14px; font-size:12.5px; line-height:2; max-height:260px; overflow:auto; direction:ltr; text-align:left; font-family:ui-monospace,monospace; }
+    .log div.e { color:#f87171; } .log div.s { color:#4ade80; }
+    .steps { counter-reset: step; }
+    .note { font-size:13px; color:var(--muted); line-height:2; }
+    code { background:#0b1220; padding:2px 6px; border-radius:6px; color:var(--gold); }
+    a { color: var(--gold); }
+    .chk { display:flex; align-items:center; gap:8px; margin-top:14px; font-size:13.5px; }
+    .chk input { width:auto; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1><i class="fa-solid fa-database"></i> تهيئة قاعدة بيانات تكسي دجلة</h1>
+  <p class="note">هذه الصفحة تُستخدم مرة واحدة فقط لإنشاء حساب الإدارة الحقيقي وتعبئة قاعدة Firestore. بعد الانتهاء يُفضّل حذف الملف أو منع الوصول إليه.</p>
+
+  <div class="card">
+    <h2><i class="fa-solid fa-plug"></i> حالة الاتصال</h2>
+    <div id="connStatus" class="status warn"><i class="fa-solid fa-spinner fa-spin"></i> جارِ الفحص…</div>
+    <p class="hint" id="connDetail" style="margin-top:12px"></p>
+  </div>
+
+  <div class="card steps">
+    <h2><i class="fa-solid fa-user-shield"></i> 1) حساب الإدارة</h2>
+    <p class="hint">أنشئ أول حساب أدمن بكلمة مرور حقيقية (تُخزَّن مشفّرة داخل Firebase Authentication). إذا كان الحساب موجوداً استخدم "تسجيل الدخول".</p>
+    <label>اسم المدير</label>
+    <input id="adminName" placeholder="مدير النظام" value="مدير النظام" />
+    <label>البريد الإلكتروني</label>
+    <input id="adminEmail" type="email" placeholder="admin@yourdomain.com" autocomplete="username" />
+    <label>كلمة المرور (8 أحرف فأكثر)</label>
+    <input id="adminPass" type="password" placeholder="••••••••" autocomplete="new-password" />
+    <div class="row">
+      <button id="btnCreate"><i class="fa-solid fa-user-plus"></i> إنشاء أدمن</button>
+      <button id="btnLogin" class="sec"><i class="fa-solid fa-right-to-bracket"></i> تسجيل الدخول</button>
+    </div>
+    <div id="adminStatus" class="status" style="margin-top:14px; display:none"></div>
+  </div>
+
+  <div class="card">
+    <h2><i class="fa-solid fa-cloud-arrow-up"></i> 2) تعبئة البيانات الأولية</h2>
+    <p class="hint">يرفع بيانات المدينة الحالية إلى Firestore: الإعدادات، التسعير، معلومات الدعم، الكوبونات، السائقين والزبائن والرحلات التجريبية.</p>
+    <div class="chk">
+      <input type="checkbox" id="withDemo" checked />
+      <label for="withDemo" style="margin:0">إنشاء حسابات دخول تجريبية (زبون: ahmed@dijla.iq / سائق: karim@dijla.iq — كلمة المرور 123456)</label>
+    </div>
+    <button id="btnSeed" disabled><i class="fa-solid fa-seedling"></i> تعبئة قاعدة البيانات</button>
+  </div>
+
+  <div class="card">
+    <h2><i class="fa-solid fa-terminal"></i> السجل</h2>
+    <div id="log" class="log"><div>في انتظار العمليات…</div></div>
+    <button class="sec" onclick="location.href='index.html'"><i class="fa-solid fa-arrow-left"></i> رجوع للموقع</button>
+  </div>
+
+  <div class="card">
+    <h2><i class="fa-solid fa-shield-halved"></i> قواعد الحماية</h2>
+    <p class="note">
+      قبل تشغيل هذه الصفحة تأكد من: تفعيل <code>Email/Password</code> في Authentication، وإنشاء قاعدة <code>Firestore</code>،
+      ولصق محتوى ملف <code>firestore.rules</code> في تبويب Rules ثم Publish.
+      إنشاء أول أدمن مسموح مرة واحدة فقط ثم يُغلق تلقائياً بمستند <code>config/bootstrap</code>.
+    </p>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/db.js"></script>
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const logBox = $('log');
+
+  function log(message, kind = '') {
+    const line = document.createElement('div');
+    line.className = kind;
+    line.textContent = `${new Date().toLocaleTimeString('en-GB')} — ${message}`;
+    logBox.appendChild(line);
+    logBox.scrollTop = logBox.scrollHeight;
+  }
+
+  function setStatus(el, kind, html) {
+    el.style.display = 'flex';
+    el.className = `status ${kind}`;
+    el.innerHTML = html;
+  }
+
+  const app = firebase.initializeApp(window.FIREBASE_CONFIG);
+  const auth = firebase.auth();
+  const fs = firebase.firestore();
+
+  const ERRORS = {
+    'auth/email-already-in-use': 'البريد مستخدم مسبقاً — استخدم "تسجيل الدخول"',
+    'auth/weak-password': 'كلمة المرور ضعيفة',
+    'auth/invalid-email': 'صيغة البريد غير صحيحة',
+    'auth/wrong-password': 'كلمة المرور غير صحيحة',
+    'auth/invalid-credential': 'بيانات الدخول غير صحيحة',
+    'auth/user-not-found': 'الحساب غير موجود',
+    'auth/operation-not-allowed': 'فعّل Email/Password من Firebase Console',
+    'permission-denied': 'مرفوض من قواعد الحماية — راجع firestore.rules'
+  };
+  const msg = (err) => ERRORS[err?.code] || err?.message || String(err);
+
+  /* ===== فحص الاتصال ===== */
+  (async function checkConnection() {
+    $('connDetail').textContent = `المشروع: ${window.FIREBASE_CONFIG.projectId}`;
+    try {
+      const snap = await fs.collection('config').doc('settings').get();
+      setStatus($('connStatus'), 'ok', `<i class="fa-solid fa-circle-check"></i> متصل بـ Firestore ${snap.exists ? '— القاعدة مهيأة مسبقاً' : '— القاعدة فارغة (تحتاج تعبئة)'}`);
+      log('connected to firestore', 's');
+    } catch (err) {
+      setStatus($('connStatus'), 'err', `<i class="fa-solid fa-circle-xmark"></i> تعذر الاتصال: ${msg(err)}`);
+      log('connection failed: ' + msg(err), 'e');
+    }
+  })();
+
+  auth.onAuthStateChanged(async (user) => {
+    if (!user) {
+      $('btnSeed').disabled = true;
+      return;
+    }
+    const isAdmin = await fs.collection('admins').doc(user.uid).get().then((s) => s.exists).catch(() => false);
+    setStatus($('adminStatus'), isAdmin ? 'ok' : 'warn',
+      `<i class="fa-solid fa-user"></i> ${user.email} ${isAdmin ? '— أدمن معتمد' : '— ليس أدمن'}`);
+    $('btnSeed').disabled = !isAdmin;
+  });
+
+  /* ===== إنشاء أول أدمن ===== */
+  $('btnCreate').onclick = async () => {
+    const email = $('adminEmail').value.trim();
+    const pass = $('adminPass').value;
+    const name = $('adminName').value.trim() || 'مدير النظام';
+    if (!email || pass.length < 8) return setStatus($('adminStatus'), 'err', 'أدخل بريداً صحيحاً وكلمة مرور 8 أحرف فأكثر');
+
+    $('btnCreate').disabled = true;
+    try {
+      const cred = await auth.createUserWithEmailAndPassword(email, pass);
+      const uid = cred.user.uid;
+      log('auth user created: ' + uid, 's');
+
+      const batch = fs.batch();
+      batch.set(fs.collection('admins').doc(uid), {
+        id: uid, uid, name, email, role: 'super_admin', createdAt: new Date().toISOString()
+      });
+      batch.set(fs.collection('accounts').doc(uid), {
+        uid, role: 'admin', refId: uid, email, createdAt: new Date().toISOString()
+      });
+      batch.set(fs.collection('config').doc('bootstrap'), {
+        done: true, firstAdmin: uid, createdAt: new Date().toISOString()
+      });
+      await batch.commit();
+
+      log('admin profile + bootstrap lock written', 's');
+      setStatus($('adminStatus'), 'ok', `<i class="fa-solid fa-circle-check"></i> تم إنشاء الأدمن: ${email}`);
+      $('btnSeed').disabled = false;
+    } catch (err) {
+      log('create admin failed: ' + msg(err), 'e');
+      setStatus($('adminStatus'), 'err', msg(err));
+    }
+    $('btnCreate').disabled = false;
+  };
+
+  /* ===== دخول أدمن موجود ===== */
+  $('btnLogin').onclick = async () => {
+    try {
+      const cred = await auth.signInWithEmailAndPassword($('adminEmail').value.trim(), $('adminPass').value);
+      log('signed in: ' + cred.user.email, 's');
+    } catch (err) {
+      log('login failed: ' + msg(err), 'e');
+      setStatus($('adminStatus'), 'err', msg(err));
+    }
+  };
+
+  /* ===== تعبئة البيانات ===== */
+  function strip(record) {
+    return JSON.parse(JSON.stringify(record, (k, v) => (k === 'password' ? undefined : (v === undefined ? null : v))));
+  }
+
+  async function writeAll(collection, records, keyField = 'id') {
+    let batch = fs.batch();
+    let count = 0;
+    for (const record of records) {
+      const id = String(record[keyField]);
+      batch.set(fs.collection(collection).doc(id), strip(record), { merge: true });
+      if (++count % 400 === 0) { await batch.commit(); batch = fs.batch(); }
+    }
+    await batch.commit();
+    log(`seeded ${collection}: ${records.length}`, 's');
+  }
+
+  async function createDemoAccounts(data) {
+    const seeder = firebase.apps.find((a) => a.name === 'seeder') || firebase.initializeApp(window.FIREBASE_CONFIG, 'seeder');
+    const seederAuth = seeder.auth();
+    const demos = [
+      { role: 'customer', record: data.users.customers[0], collection: 'customers' },
+      { role: 'driver', record: data.users.drivers[0], collection: 'drivers' }
+    ];
+    for (const demo of demos) {
+      if (!demo.record) continue;
+      const email = demo.record.email;
+      const password = demo.record.password || '123456';
+      let uid = null;
+      try {
+        const cred = await seederAuth.createUserWithEmailAndPassword(email, password);
+        uid = cred.user.uid;
+        log(`demo auth created: ${email}`, 's');
+      } catch (err) {
+        if (err.code === 'auth/email-already-in-use') {
+          try {
+            const cred = await seederAuth.signInWithEmailAndPassword(email, password);
+            uid = cred.user.uid;
+            log(`demo already exists: ${email}`);
+          } catch (e2) { log(`demo skipped ${email}: ${msg(e2)}`, 'e'); }
+        } else {
+          log(`demo failed ${email}: ${msg(err)}`, 'e');
+        }
+      }
+      if (uid) {
+        await fs.collection(demo.collection).doc(String(demo.record.id)).set({ uid }, { merge: true });
+        await fs.collection('accounts').doc(uid).set({
+          uid, role: demo.role, refId: demo.record.id, email, createdAt: new Date().toISOString()
+        });
+      }
+      try { await seederAuth.signOut(); } catch (_) {}
+    }
+  }
+
+  $('btnSeed').onclick = async () => {
+    $('btnSeed').disabled = true;
+    try {
+      const data = DB.snapshot();
+      await fs.collection('config').doc('settings').set(strip(data.settings), { merge: true });
+      await fs.collection('config').doc('pricing').set(strip(data.pricing), { merge: true });
+      await fs.collection('config').doc('support').set(strip(data.support), { merge: true });
+      await fs.collection('config').doc('stats').set(strip(data.stats), { merge: true });
+      log('seeded config docs', 's');
+
+      await writeAll('customers', data.users.customers);
+      await writeAll('drivers', data.users.drivers);
+      await writeAll('rides', data.rides);
+      await writeAll('transactions', data.transactions);
+      await writeAll('notifications', data.notifications);
+      await writeAll('promoCodes', data.promoCodes, 'code');
+      await writeAll('withdrawals', data.withdrawals || []);
+      await writeAll('tickets', data.tickets || []);
+
+      if ($('withDemo').checked) await createDemoAccounts(data);
+
+      log('=== SEED COMPLETE ===', 's');
+      setStatus($('connStatus'), 'ok', '<i class="fa-solid fa-circle-check"></i> تمت التهيئة بنجاح — افتح الموقع وسجّل دخول الإدارة');
+    } catch (err) {
+      log('seed failed: ' + msg(err), 'e');
+      setStatus($('connStatus'), 'err', 'فشل التعبئة: ' + msg(err));
+    }
+    $('btnSeed').disabled = false;
+  };
+})();
+</script>
+</body>
+</html>
