@@ -65,11 +65,7 @@
 
   <div class="card">
     <h2><i class="fa-solid fa-cloud-arrow-up"></i> 2) تعبئة البيانات الأولية</h2>
-    <p class="hint">يرفع بيانات المدينة الحالية إلى Firestore: الإعدادات، التسعير، معلومات الدعم، الكوبونات، السائقين والزبائن والرحلات التجريبية.</p>
-    <div class="chk">
-      <input type="checkbox" id="withDemo" checked />
-      <label for="withDemo" style="margin:0">إنشاء حسابات دخول تجريبية (زبون: ahmed@dijla.iq / سائق: karim@dijla.iq — كلمة المرور 123456)</label>
-    </div>
+    <p class="hint">يرفع بيانات المدينة الحالية إلى Firestore: الإعدادات، التسعير، معلومات الدعم، الكوبونات، السائقين والزبائن والرحلات الحقيقية.</p>
     <button id="btnSeed" disabled><i class="fa-solid fa-seedling"></i> تعبئة قاعدة البيانات</button>
   </div>
 
@@ -217,43 +213,6 @@
     log(`seeded ${collection}: ${records.length}`, 's');
   }
 
-  async function createDemoAccounts(data) {
-    const seeder = firebase.apps.find((a) => a.name === 'seeder') || firebase.initializeApp(window.FIREBASE_CONFIG, 'seeder');
-    const seederAuth = seeder.auth();
-    const demos = [
-      { role: 'customer', record: data.users.customers[0], collection: 'customers' },
-      { role: 'driver', record: data.users.drivers[0], collection: 'drivers' }
-    ];
-    for (const demo of demos) {
-      if (!demo.record) continue;
-      const email = demo.record.email;
-      const password = demo.record.password || '123456';
-      let uid = null;
-      try {
-        const cred = await seederAuth.createUserWithEmailAndPassword(email, password);
-        uid = cred.user.uid;
-        log(`demo auth created: ${email}`, 's');
-      } catch (err) {
-        if (err.code === 'auth/email-already-in-use') {
-          try {
-            const cred = await seederAuth.signInWithEmailAndPassword(email, password);
-            uid = cred.user.uid;
-            log(`demo already exists: ${email}`);
-          } catch (e2) { log(`demo skipped ${email}: ${msg(e2)}`, 'e'); }
-        } else {
-          log(`demo failed ${email}: ${msg(err)}`, 'e');
-        }
-      }
-      if (uid) {
-        await fs.collection(demo.collection).doc(String(demo.record.id)).set({ uid }, { merge: true });
-        await fs.collection('accounts').doc(uid).set({
-          uid, role: demo.role, refId: demo.record.id, email, createdAt: new Date().toISOString()
-        });
-      }
-      try { await seederAuth.signOut(); } catch (_) {}
-    }
-  }
-
   $('btnSeed').onclick = async () => {
     $('btnSeed').disabled = true;
     try {
@@ -272,8 +231,6 @@
       await writeAll('promoCodes', data.promoCodes, 'code');
       await writeAll('withdrawals', data.withdrawals || []);
       await writeAll('tickets', data.tickets || []);
-
-      if ($('withDemo').checked) await createDemoAccounts(data);
 
       log('=== SEED COMPLETE ===', 's');
       setStatus($('connStatus'), 'ok', '<i class="fa-solid fa-circle-check"></i> تمت التهيئة بنجاح — افتح الموقع وسجّل دخول الإدارة');

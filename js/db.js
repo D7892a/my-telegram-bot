@@ -281,7 +281,11 @@ const DB = (() => {
       pendingDrivers: 3,
       todayRides: 64,
       todayRevenue: 78000
-    }
+    },
+    lostItems: [
+      { id: 1, reporterName: 'أحمد محمد', reporterType: 'customer', itemName: 'محفظة جلدية سوداء', description: 'محفظة فيها هوية أحوال ومبلغ 250 ألف دينار', location: 'داخل التكسي - كيا ريو أبيض', phone: '0770 123 4567', photo: null, status: 'published', createdAt: '2026-08-15 14:30' },
+      { id: 2, reporterName: 'كريم عبدالله', reporterType: 'driver', itemName: 'هاتف سامسونج A55', description: 'هاتف أسود مع غطاء شفاف تركه زبون في السيارة', location: 'سيارة تكسي - كامري 2022', phone: '0790 111 2233', photo: null, status: 'pending', createdAt: '2026-08-18 09:15' }
+    ]
   };
 
   function generateNasiriyahRides() {
@@ -374,6 +378,7 @@ const DB = (() => {
           parsed.pendingRequests = parsed.pendingRequests || [];
           parsed.tickets = parsed.tickets || [];
           parsed.withdrawals = parsed.withdrawals || [];
+          parsed.lostItems = parsed.lostItems || [];
           return parsed;
         }
       }
@@ -836,7 +841,26 @@ const DB = (() => {
       return data;
     },
 
-    getData: () => data
+    getData: () => data,
+
+    /* ========== الأمانات (Lost & Found) ========== */
+    getLostItems: () => data.lostItems || [],
+
+    addLostItem: (item) => {
+      data.lostItems = data.lostItems || [];
+      item.id = nextId(data.lostItems);
+      item.createdAt = stamp();
+      item.status = item.status || 'pending';
+      data.lostItems.unshift(item);
+      save();
+      return item;
+    },
+
+    updateLostItem: (id, updates) => {
+      const item = (data.lostItems || []).find((i) => i.id === id);
+      if (item) { Object.assign(item, updates); save(); }
+      return item;
+    },
   };
 })();
 

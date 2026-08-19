@@ -423,18 +423,7 @@
             <button type="submit" class="btn-primary full">
               <i class="fa-solid fa-right-to-bracket"></i> دخول
             </button>
-            <div class="demo-section">
-              <p class="demo-label"><i class="fa-solid fa-flask"></i> حسابات تجريبية (زبون/سائق فقط — الإدارة تحتاج كلمة سر حقيقية):</p>
-              <div class="demo-buttons">
-                <button type="button" onclick="quickLogin('customer')" class="demo-btn">
-                  <i class="fa-solid fa-user"></i> زبون
-                </button>
-                <button type="button" onclick="quickLogin('driver')" class="demo-btn">
-                  <i class="fa-solid fa-id-card"></i> سائق
-                </button>
-
-              </div>
-            </div>
+            
           </form>
 
           <!-- نموذج إنشاء حساب -->
@@ -1567,6 +1556,14 @@
           </div>
         </div>
 
+        <!-- ============== الرحلات الحية ============== -->
+        <div class="dash-tab" id="adminLive">
+          <h2 class="page-title" style="display:flex;align-items:center;gap:10px"><i class="fa-solid fa-eye"></i> الرحلات الحية <span class="live-dot" style="width:12px;height:12px;background:#22c55e;border-radius:50%;display:inline-block;animation:pulse 1.5s infinite"></span></h2>
+
+          <div id="liveRidesList" class="trips-list">
+            <p class="muted" ص>لا توجد رحلات نشطة حاليا</p></div>
+        </div>
+
         <!-- ============== إدارة السائقين ============== -->
         <div class="dash-tab" id="adminDrivers">
           <div class="section-head">
@@ -1613,6 +1610,22 @@
               </table>
             </div>
           </div>
+        </div>
+
+        <!-- ============== قسم الأمانات (المفقودات) ============== -->
+        <div class="dash-tab" id="adminLostItems">
+          <div class="section-head">
+            <h2 class="page-title"><i class="fa-solid fa-box-open"></i> الأمانات والمفقودات</h2>
+          </div>
+
+          <div class="filter-tabs">
+            <button class="ft-tab active" data-filter="pending">قيد المراجعة <span class="count" id="lostPendingCount">0</span></button>
+            <button class="ft-tab" data-filter="published">منشور</button>
+            <button class="ft-tab" data-filter="reclaimed">مسترجع</button>
+            <button class="ft-tab" data-filter="all">الكل</button>
+          </div>
+
+          <div id="adminLostItemsList" class="lost-items-grid"></div>
         </div>
 
         <!-- ============== إدارة الزبائن ============== -->
@@ -1850,6 +1863,10 @@
           <i class="fa-solid fa-chart-line"></i>
           <span>الرئيسية</span>
         </button>
+        <button class="bnav-btn" data-tab="adminLive">
+          <i class="fa-solid fa-eye"></i>
+          <span>مباشر</span>
+        </button>
         <button class="bnav-btn" data-tab="adminDrivers">
           <i class="fa-solid fa-id-card"></i>
           <span>السائقين</span>
@@ -1857,6 +1874,10 @@
         <button class="bnav-btn" data-tab="adminRides">
           <i class="fa-solid fa-route"></i>
           <span>الرحلات</span>
+        </button>
+        <button class="bnav-btn" data-tab="adminLostItems">
+          <i class="fa-solid fa-box-open"></i>
+          <span>الأمانات</span>
         </button>
         <button class="bnav-btn" data-tab="adminUsers">
           <i class="fa-solid fa-users"></i>
