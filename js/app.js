@@ -108,7 +108,13 @@ const App = (() => {
     let discount = 0;
     if (coupon?.type === 'percent') discount = beforeDiscount * (coupon.discount / 100);
     else if (coupon?.type === 'fixed') discount = coupon.discount;
-    const total = Math.max(Math.round((beforeDiscount - discount) / 100) * 100, Number(pricing.minimum) || 3000);
+    const stopCount = Math.max(0, Number(byId('stopCount')?.value) || 0);
+    const isReturn = !!byId('returnTrip')?.checked;
+    const stopFee = Number(pricing.stopFee) || 0;
+    const stopTotal = stopCount * stopFee;
+    const returnPercent = Number(pricing.returnTripFeePercent ?? 100);
+    const returnExtra = isReturn ? (beforeDiscount * returnPercent / 100) : 0;
+    const total = Math.max(Math.round((beforeDiscount - discount + stopTotal + returnExtra) / 100) * 100, Number(pricing.minimum) || 3000);
     return {
       type: kind,
       km,
@@ -117,6 +123,7 @@ const App = (() => {
       surge,
       beforeDiscount: Math.round(beforeDiscount / 100) * 100,
       discount: Math.round(discount),
+      stopCount, stopFee, stopTotal, isReturn, returnPercent, returnExtra,
       total
     };
   }
@@ -188,6 +195,8 @@ const App = (() => {
         <div class="fb-row"><span>المسافة ${formatKm(b.km)} × ${b.perKm.toLocaleString('en-US')}</span><strong>${formatIQD(b.km * b.perKm)}</strong></div>
         <div class="fb-row"><span>${b.surge.label}${b.surge.multiplier > 1 ? ` ×${b.surge.multiplier}` : ''}</span><strong>${b.surge.multiplier > 1 ? 'مفعّلة' : 'بدون زيادة'}</strong></div>
         ${b.discount ? `<div class="fb-row save"><span>خصم ${state.coupon.code}</span><strong>- ${formatIQD(b.discount)}</strong></div>` : ''}
+        ${b.isReturn ? `<div class="fb-row"><span>رحلة مرجع (${b.returnPercent}%)</span><strong>+ ${formatIQD(b.returnExtra)}</strong></div>` : ''}
+        ${b.stopCount ? `<div class="fb-row"><span>${b.stopCount} توقف × ${formatIQD(b.stopFee)}</span><strong>+ ${formatIQD(b.stopTotal)}</strong></div>` : ''}
         <div class="fb-row total"><span>المبلغ النهائي</span><strong>${formatIQD(b.total)}</strong></div>
       `;
     }
@@ -505,11 +514,6 @@ const App = (() => {
     }
     recalc();
     const user = currentUser();
-    if (state.payment === 'wallet' && user && (user.wallet || 0) < state.fare) {
-      toast('رصيد المحفظة لا يكفي. اشحن أو اختر دفع نقدي', 'error');
-      openWalletModal('topup');
-      return;
-    }
 
     const driver = nearestDriver(state.vehicle);
     if (!driver) {
@@ -565,7 +569,10 @@ const App = (() => {
       fare: state.fare,
       type: state.vehicle,
       status: 'active',
-      payment: state.payment,
+      payment: 'cash',
+      returnTrip: !!state.breakdown?.isReturn,
+      stopCount: state.breakdown?.stopCount || 0,
+      companySettlement: 'card',
       coupon: state.coupon?.code || null,
       date: new Date().toISOString().replace('T', ' ').slice(0, 16),
       rating: 0
@@ -574,18 +581,8 @@ const App = (() => {
     try { localStorage.setItem('dijla_active_ride', JSON.stringify(ride)); } catch (_) {}
 
     if (state.coupon) DB.useCoupon(state.coupon.code);
-    if (state.payment === 'wallet' && session) {
-      DB.updateWallet(session.userId, -state.fare);
-      DB.addTransaction({
-        userId: session.userId,
-        userType: 'customer',
-        type: 'payment',
-        amount: -state.fare,
-        method: 'wallet',
-        description: `دفع رحلة - ${state.from.label} إلى ${state.to.label}`
-      });
-      refreshCustomerHeader();
-    }
+    // المحفظة متوقفة: الدفع نقداً عند نهاية الرحلة، ولا يُخصم أي رصيد.
+
 
     DB.addPendingRequest({
       rideId: ride.id,
@@ -736,11 +733,10 @@ const App = (() => {
       const driver = DB.findDriverById(state.ride.driverId);
       if (driver) {
         const commission = (DB.getPricing().commission || 15) / 100;
-        const net = Math.round(state.ride.fare * (1 - commission));
-        DB.updateDriver(driver.id, {
-          trips: (driver.trips || 0) + 1,
-          earnings: (driver.earnings || 0) + net
-        });
+        const companyDue = Math.round(state.ride.fare * commission);
+        const net = state.ride.fare - companyDue;
+        DB.updateDriver(driver.id, { trips: (driver.trips || 0) + 1, earnings: (driver.earnings || 0) + net, lastSettlement: { amount: companyDue, method: 'company_card', status: 'due' } });
+        DB.updateRide(state.ride.id, { driverNet: net, companyDue, settlementMethod: 'company_card', settlementStatus: 'pending' });
       }
     }
     if (session) {
@@ -1515,9 +1511,12 @@ const App = (() => {
           <p>${t.message || ''}</p>
         </div>
         ${t.status === 'closed' ? '<span class="trip-status completed">مغلقة</span>'
-          : `<button class="btn-secondary" data-ticket="${t.id}">إغلاق</button>`}
+          : `<div class="ticket-actions"><button class="btn-secondary" data-reply="${t.id}">رد</button><button class="btn-secondary" data-ticket="${t.id}">إغلاق</button></div>`}
       </div>
     `).join('') : '<div class="empty-state">لا توجد تذاكر دعم بعد</div>';
+    box.querySelectorAll('[data-reply]').forEach((btn) => {
+      btn.addEventListener('click', () => { const ticket = tickets.find(t => String(t.id) === String(btn.dataset.reply)); const suggested = suggestSupportReply(ticket?.message || ''); const reply = window.prompt('رد الدعم (مقترح: ' + suggested + ')', suggested); if (reply?.trim()) { DB.replyTicket(btn.dataset.reply, reply.trim()); renderTickets(); toast('تم إرسال الرد', 'success'); } });
+    });
     box.querySelectorAll('[data-ticket]').forEach((btn) => {
       btn.addEventListener('click', () => {
         DB.updateTicket(btn.dataset.ticket, { status: 'closed', closedAt: new Date().toISOString() });
@@ -1526,6 +1525,20 @@ const App = (() => {
       });
     });
   }
+
+  function suggestSupportReply(message) {
+    const text = String(message || '').toLowerCase();
+    if (text.includes('سائق') || text.includes('طلب')) return 'أهلاً بك، نتابع طلبك مع السائق وسيتواصل معك فريق الدعم قريباً.';
+    if (text.includes('دفع') || text.includes('فلوس') || text.includes('مبلغ')) return 'أهلاً بك، تم استلام استفسارك المالي وسنراجعه مع الإدارة ونرد عليك مباشرة.';
+    return 'أهلاً بك، استلمنا رسالتك. إذا ما انحلّت المشكلة بهذا الرد، راح نصعّدها لموظف الدعم للمحادثة المباشرة.';
+  }
+  function renderAnnouncementsAdmin() {
+    const box = byId('announcementsList'); if (!box) return; const items = DB.getAnnouncements?.() || [];
+    box.innerHTML = items.length ? items.slice(0, 10).map(a => `<div class="ticket-row"><div><strong>${a.title}</strong><p>${a.body}</p><small>${a.active ? 'نشط' : 'متوقف'}</small></div><button class="btn-secondary" data-ann="${a.id}">${a.active ? 'إيقاف' : 'تفعيل'}</button></div>`).join('') : '<div class="empty-state">لا توجد إعلانات</div>';
+    box.querySelectorAll('[data-ann]').forEach(b => b.onclick = () => { DB.updateAnnouncement(b.dataset.ann, { active: b.textContent.trim() === 'تفعيل' }); renderAnnouncementsAdmin(); renderCustomerAnnouncements(); });
+  }
+  function publishAnnouncement() { const title = byId('announcementTitle')?.value.trim(); const body = byId('announcementBody')?.value.trim(); if (!title || !body) return toast('اكتب عنوان ونص الإعلان', 'error'); DB.addAnnouncement({ title, body, active: true }); byId('announcementTitle').value = ''; byId('announcementBody').value = ''; renderAnnouncementsAdmin(); renderCustomerAnnouncements(); toast('تم نشر الإعلان للزبائن', 'success'); }
+  function renderCustomerAnnouncements() { const box = byId('customerAnnouncements'); if (!box) return; const items = (DB.getAnnouncements?.() || []).filter(a => a.active); box.innerHTML = items.slice(0, 3).map(a => `<article class="announcement-card"><i class="fa-solid fa-bullhorn"></i><div><strong>${a.title}</strong><p>${a.body}</p></div></article>`).join(''); }
 
   function fillAdminAccountCard() {
     const session = currentSession();
@@ -1564,6 +1577,7 @@ const App = (() => {
       refreshCustomerHeader();
       renderCustomerTrips();
       renderWallet();
+      renderCustomerAnnouncements();
     }
   }
 
@@ -1608,6 +1622,7 @@ const App = (() => {
     fillSupportForm();
     fillAdminAccountCard();
     renderTickets();
+    renderAnnouncementsAdmin();
     drawAdminCharts();
     renderDbStatus();
     renderCloudBanner();
@@ -1709,7 +1724,10 @@ const App = (() => {
     if (byId('priceVan')) byId('priceVan').value = p.perKm.van;
     if (byId('priceMin')) byId('priceMin').value = p.minimum;
     if (byId('priceBase')) byId('priceBase').value = p.base;
+    if (byId('stopFee')) byId('stopFee').value = p.stopFee || 0;
+    if (byId('returnTripFeePercent')) byId('returnTripFeePercent').value = p.returnTripFeePercent ?? 100;
     if (byId('commissionRate')) byId('commissionRate').value = p.commission;
+    if (byId('companyCardNumber')) byId('companyCardNumber').value = p.companyCard?.number || '';
     const s = DB.getSettings();
     if (byId('newUserDiscount')) byId('newUserDiscount').value = s.newUserDiscount;
     if (byId('welcomeCode')) byId('welcomeCode').value = s.welcomeCode;
@@ -1751,7 +1769,9 @@ const App = (() => {
         comfort: Number(byId('priceComfort')?.value) || 800,
         premium: Number(byId('pricePremium')?.value) || 1500,
         van: Number(byId('priceVan')?.value) || 1000
-      }
+      },
+      stopFee: Number(byId('stopFee')?.value) || 0,
+      returnTripFeePercent: Number(byId('returnTripFeePercent')?.value) || 100
     });
     toast('تم حفظ التسعير في قاعدة البيانات', 'success');
     recalc();
@@ -1759,7 +1779,7 @@ const App = (() => {
 
   function saveCommissions() {
     const welcome = (byId('welcomeCode')?.value || 'WELCOME50').trim().toUpperCase();
-    DB.updatePricing({ commission: Number(byId('commissionRate')?.value) || 15 });
+    DB.updatePricing({ commission: Number(byId('commissionRate')?.value) || 15, companyCard: { ...(DB.getPricing().companyCard || {}), number: byId('companyCardNumber')?.value.trim() || '' }, walletEnabled: false });
     DB.updateSettings({
       newUserDiscount: Number(byId('newUserDiscount')?.value) || 30,
       welcomeCode: welcome
@@ -1880,6 +1900,7 @@ const App = (() => {
       renderSavedPlaces();
       renderCustomerTrips();
       renderWallet();
+      renderCustomerAnnouncements();
       renderCityPlaces();
       Maps.initCustomerMap?.();
       if (state.ride) fillTripScreen();
@@ -1960,9 +1981,8 @@ const App = (() => {
       });
     });
 
-    byId('paymentMethod')?.addEventListener('change', (e) => {
-      state.payment = e.target.value;
-    });
+    byId('paymentMethod')?.addEventListener('change', (e) => { state.payment = 'cash'; e.target.value = 'cash'; });
+    ['stopCount', 'returnTrip'].forEach(id => byId(id)?.addEventListener('change', () => recalc()));
 
     byId('bookFrom')?.addEventListener('input', (e) => typeSearch('from', e.target.value));
     byId('bookTo')?.addEventListener('input', (e) => typeSearch('to', e.target.value));
@@ -2170,6 +2190,8 @@ const App = (() => {
     changeAdminPassword,
     renderCloudBanner,
     renderTickets,
+    renderCustomerAnnouncements,
+    publishAnnouncement,
     onCloudSync
   };
 })();
@@ -2223,5 +2245,6 @@ Object.assign(window, {
   supportCall: () => App.supportCall(),
   supportWhatsapp: () => App.supportWhatsapp(),
   supportEmail: () => App.supportEmail(),
-  changeAdminPassword: () => App.changeAdminPassword()
+  changeAdminPassword: () => App.changeAdminPassword(),
+  publishAnnouncement: () => App.publishAnnouncement()
 });

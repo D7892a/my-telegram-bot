@@ -233,6 +233,10 @@ const DB = (() => {
       perKm: { economy: 500, comfort: 800, premium: 1500, van: 1000 },
       minimum: 3000,
       commission: 15,
+      returnTripFeePercent: 0,
+      stopFee: 1000,
+      companyCard: { name: 'بطاقة شركة تكسي دجلة', number: '' },
+      walletEnabled: false,
       surgeMultipliers: { peak: 1.5, night: 1.3 }
     },
     settings: {
@@ -269,6 +273,7 @@ const DB = (() => {
     ],
     pendingRequests: [],
     tickets: [],
+    announcements: [],
     withdrawals: [
       { id: 1, driverId: 101, amount: 180000, status: 'paid', createdAt: '2026-08-12' },
       { id: 2, driverId: 101, amount: 150000, status: 'paid', createdAt: '2026-08-05' }
@@ -814,6 +819,32 @@ const DB = (() => {
     },
 
     getTickets: () => data.tickets || [],
+
+    replyTicket: (id, reply, by = 'الإدارة') => {
+      const ticket = (data.tickets || []).find((t) => String(t.id) === String(id));
+      if (!ticket) return null;
+      ticket.replies = ticket.replies || [];
+      ticket.replies.push({ by, message: reply, createdAt: stamp() });
+      ticket.status = 'answered';
+      save();
+      return ticket;
+    },
+
+    getAnnouncements: () => data.announcements || [],
+    addAnnouncement: (item) => {
+      data.announcements = data.announcements || [];
+      item.id = nextId(data.announcements);
+      item.createdAt = stamp();
+      item.active = item.active !== false;
+      data.announcements.unshift(item);
+      save();
+      return item;
+    },
+    updateAnnouncement: (id, updates) => {
+      const item = (data.announcements || []).find((a) => String(a.id) === String(id));
+      if (item) { Object.assign(item, updates); save(); }
+      return item;
+    },
 
     addWithdrawal: (item) => {
       data.withdrawals = data.withdrawals || [];
