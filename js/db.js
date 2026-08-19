@@ -215,7 +215,10 @@ const DB = (() => {
           }
         }
       ],
-      admins: []
+admins: [{
+        id: 'admin-1', name: 'مدير النظام', email: 'admin@dijla.iq', password: 'admin1234',
+        role: 'super_admin', phone: '+964 770 000 0000', createdAt: '2026-01-01'
+      }]
     },
     rides: [],
     transactions: [

@@ -130,17 +130,10 @@ const Auth = (() => {
     else DB.upsertAdmin(profile);
   }
 
-  /** دخول محلي احتياطي (بدون إنترنت) — للزبون والسائق فقط */
+  /** دخول محلي احتياطي (بدون إنترنت) — للزبون والسائق والأدمن المحلي */
   function localLogin(email, password, role) {
-    if (role === 'admin' || String(email).toLowerCase().startsWith('admin@')) {
-      return {
-        success: false,
-        message: 'دخول الإدارة يتطلب اتصالاً بقاعدة بيانات Firebase. تحقق من الإنترنت.'
-      };
-    }
-
-    let user = DB.findCustomerByEmail(email) || DB.findDriverByEmail(email);
-    const resolvedRole = DB.findCustomerByEmail(email) ? 'customer' : (user ? 'driver' : null);
+    let user = DB.findAdminByEmail(email) || DB.findCustomerByEmail(email) || DB.findDriverByEmail(email);
+    const resolvedRole = user ? (DB.findAdminByEmail(email) ? 'admin' : DB.findCustomerByEmail(email) ? 'customer' : 'driver') : null;
     if (!user) return { success: false, message: 'البريد الإلكتروني غير مسجل' };
     if (!user.password || user.password !== password) {
       return { success: false, message: 'كلمة المرور غير صحيحة (أو الحساب سحابي ويحتاج اتصال)' };
