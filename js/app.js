@@ -1079,7 +1079,7 @@ const App = (() => {
     set('custName', fullName);
     set('greetName', user.firstName);
     set('custRating', user.rating);
-    set('custTrips', `${user.trips || 0} رحلة`);
+    set('custTripsLabel', `${user.trips || 0} رحلة`);
     set('totalTripsCount', user.trips || 0);
     set('profileAvatarBig', user.firstName?.[0] || 'ز');
     set('profileNameBig', fullName);

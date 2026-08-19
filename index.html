@@ -2,12 +2,17 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>تكسي دجلة | Dijla Taxi - خدمة النقل الذكية في الناصرية</title>
-  <meta name="description" content="خدمة تكسي ذكية في الناصرية مع سائقين معتمدين وأسعار شفافة" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>تكسي دجلة | Dijla Taxi — النقل الذكي في الناصرية</title>
+  <meta name="description" content="اطلب تكسي داخل الناصرية بتتبع مباشر وسائقين معتمدين وأسعار واضحة. يعمل على الجوال والكمبيوتر." />
+  <meta name="theme-color" content="#061416" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="format-detection" content="telephone=no" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="css/main.css" />
@@ -31,10 +36,12 @@
   <div id="app" class="app hidden">
 
     <!-- ========== الصفحة الترحيبية ========== -->
-    <section id="landingPage" class="page active">
-      <div class="landing-bg">
+    <section id="landingPage" class="page active landing-page">
+      <div class="landing-bg" aria-hidden="true">
+        <div class="bg-mesh"></div>
         <div class="bg-blob blob-1"></div>
         <div class="bg-blob blob-2"></div>
+        <div class="bg-river"></div>
       </div>
 
       <nav class="landing-nav">
@@ -45,34 +52,56 @@
             <span>DIJLA TAXI</span>
           </div>
         </div>
-        <div class="nav-links">
+        <div class="nav-links" id="desktopNav">
           <a onclick="showPage('landingPage')" class="active">الرئيسية</a>
           <a onclick="showPage('aboutPage')">عن التطبيق</a>
           <a onclick="showPage('contactPage')">اتصل بنا</a>
         </div>
-        <button class="btn-primary" onclick="openAuth('login')">
-          <i class="fa-solid fa-right-to-bracket"></i> دخول
-        </button>
+        <div class="nav-actions">
+          <button class="btn-primary" onclick="openAuth('login')">
+            <i class="fa-solid fa-right-to-bracket"></i> دخول
+          </button>
+          <button type="button" class="nav-toggle" id="navToggle" aria-label="فتح القائمة" aria-expanded="false" onclick="toggleSiteNav()">
+            <span></span><span></span><span></span>
+          </button>
+        </div>
       </nav>
+
+      <div class="nav-scrim" id="navScrim" onclick="toggleSiteNav(false)"></div>
+      <aside class="nav-drawer" id="navDrawer" aria-hidden="true">
+        <div class="brand">
+          <div class="brand-icon"><i class="fa-solid fa-taxi"></i></div>
+          <div>
+            <h2>تكسي دجلة</h2>
+            <span>الناصرية فقط</span>
+          </div>
+        </div>
+        <a onclick="showPage('landingPage'); toggleSiteNav(false)">الرئيسية</a>
+        <a onclick="showPage('aboutPage'); toggleSiteNav(false)">عن التطبيق</a>
+        <a onclick="showPage('contactPage'); toggleSiteNav(false)">اتصل بنا</a>
+        <button class="btn-primary full" onclick="openAuth('login'); toggleSiteNav(false)">
+          <i class="fa-solid fa-right-to-bracket"></i> تسجيل الدخول
+        </button>
+      </aside>
 
       <div class="hero">
         <div class="hero-text">
           <div class="hero-badge">
-            <i class="fa-solid fa-bolt"></i> المنصة الأذكى في الناصرية
+            <i class="fa-solid fa-location-dot"></i> خدمة داخل الناصرية — ذي قار
           </div>
-          <h1>رحلتك القادمة <span class="gradient-text">تصير أسهل</span> وأسرع</h1>
-          <p>اطلب تكسي داخل الناصرية بأمان وراحة مع سائقين معتمدين على مدار الساعة. تتبع رحلتك من موقع السائق الحقيقي حتى بابك، ادفع بسهولة، واحصل على تجربة نقل واضحة.</p>
+          <h1>من الحبوبي للجامعة<br /><span class="gradient-text">بضغطة وحدة</span></h1>
+          <p>منصة نقل مصممة للناصرية: حدّد الانطلاق والوجهة من الخريطة، شوف السعر فوراً، وادفع نقداً عند الباب. سائقون معتمدون وتتبع حيّ على كل الأجهزة.</p>
           <div class="hero-buttons">
             <button class="btn-primary big" onclick="openAuth('register','customer')">
-              ابدأ الآن <i class="fa-solid fa-arrow-left"></i>
+              اطلب تكسي الآن <i class="fa-solid fa-arrow-left"></i>
             </button>
-            <button class="btn-outline" onclick="openAuth('login')">
-              <i class="fa-solid fa-play"></i> شاهد كيف يعمل
+            <button class="btn-outline" onclick="openAuth('register','driver')">
+              <i class="fa-solid fa-id-card"></i> انضم كسائق
             </button>
           </div>
           <div class="hero-stats">
-            <div><strong>الناصرية</strong><span>منطقة الخدمة الحالية</span></div>
-            <div><strong>+840</strong><span>زبون بالناصرية</span></div>
+            <div><strong>الناصرية</strong><span>منطقة الخدمة</span></div>
+            <div><strong>+840</strong><span>زبون بالمدينة</span></div>
             <div><strong>+46</strong><span>سائق معتمد</span></div>
           </div>
         </div>
@@ -102,7 +131,7 @@
           </div>
           <div class="floating-card card-1">
             <i class="fa-solid fa-shield-halved"></i>
-            <span>سائقون معتمدون</span>
+            <span>سائقون موثّقون</span>
           </div>
           <div class="floating-card card-2">
             <i class="fa-solid fa-clock"></i>
@@ -110,59 +139,91 @@
           </div>
           <div class="floating-card card-3">
             <i class="fa-solid fa-money-bill-wave"></i>
-            <span>أسعار شفافة</span>
+            <span>سعر واضح قبل الطلب</span>
           </div>
         </div>
       </div>
 
-      <section class="features-section">
+      <div class="city-ribbon" aria-hidden="true">
+        <div class="hoods-track">
+          <span>الحبوبي</span><span>الصالحية</span><span>الشموخ</span><span>جامعة ذي قار</span><span>السوق الكبير</span><span>كورنيش الفرات</span><span>حي المعلمين</span><span>الإسكان</span>
+          <span>الحبوبي</span><span>الصالحية</span><span>الشموخ</span><span>جامعة ذي قار</span><span>السوق الكبير</span><span>كورنيش الفرات</span><span>حي المعلمين</span><span>الإسكان</span>
+        </div>
+      </div>
+
+      <div class="how-section">
+        <div class="section-head">
+          <span class="section-tag">كيف تشتغل؟</span>
+          <h2>ثلاث خطوات وراكب</h2>
+          <p>واجهة واحدة تشتغل على الموبايل والتابلت والكمبيوتر</p>
+        </div>
+        <div class="how-grid">
+          <article class="how-card">
+            <span class="how-num">1</span>
+            <h3>حدّد النقاط</h3>
+            <p>اضغط على الخريطة أو اختر حي من أحياء الناصرية للانطلاق والوجهة.</p>
+          </article>
+          <article class="how-card">
+            <span class="how-num">2</span>
+            <h3>شوف السعر</h3>
+            <p>المبلغ يتحسب فوراً حسب المسافة ونوع السيارة، بدون رسوم مخفية.</p>
+          </article>
+          <article class="how-card">
+            <span class="how-num">3</span>
+            <h3>ادفع نقداً</h3>
+            <p>السائق يوصلك وتدفع الأجرة عند انتهاء الرحلة. بسيط وواضح.</p>
+          </article>
+        </div>
+      </div>
+
+      <div class="features-section">
         <div class="section-head">
           <span class="section-tag">المميزات</span>
-          <h2>ليش تختار <span class="gradient-text">تكسي دجلة؟</span></h2>
-          <p>نقدم لك تجربة نقل متكاملة بأحدث التقنيات وأفضل السائقين</p>
+          <h2>ليش <span class="gradient-text">تكسي دجلة</span>؟</h2>
+          <p>تجربة نقل مصممة لشوارع الناصرية، مو قالب عام</p>
         </div>
 
         <div class="features-grid">
           <div class="feature-card">
             <div class="feature-icon icon-blue"><i class="fa-solid fa-map-location-dot"></i></div>
             <h3>تتبع مباشر</h3>
-            <p>تابع موقع سائقك و رحلتك على الخريطة لحظة بلحظة</p>
+            <p>تابع موقع سائقك ورحلتك على الخريطة لحظة بلحظة</p>
           </div>
           <div class="feature-card">
             <div class="feature-icon icon-yellow"><i class="fa-solid fa-shield-halved"></i></div>
             <h3>أمان وثقة</h3>
-            <p>جميع سائقينا موثقون و مجازون من قبل الجهات الرسمية</p>
+            <p>سائقون موثّقون بمستمسكات مراجعة من الإدارة</p>
           </div>
           <div class="feature-card">
             <div class="feature-icon icon-green"><i class="fa-solid fa-tag"></i></div>
             <h3>أسعار شفافة</h3>
-            <p>اعرف السعر قبل ما تطلب بدون أي رسوم مخفية</p>
+            <p>اعرف المبلغ قبل ما تطلب، بدون أي رسوم مخفية</p>
           </div>
           <div class="feature-card">
-            <div class="feature-icon icon-purple"><i class="fa-solid fa-wallet"></i></div>
-            <h3>محفظة ذكية</h3>
-            <p>ادفع كاش، بالبطاقة، أو من محفظتك الإلكترونية</p>
+            <div class="feature-icon icon-purple"><i class="fa-solid fa-money-bill-1-wave"></i></div>
+            <h3>دفع نقدي</h3>
+            <p>تدفع للسائق عند الباب. ماكو شحن محفظة ولا تعقيد</p>
           </div>
           <div class="feature-card">
             <div class="feature-icon icon-pink"><i class="fa-solid fa-star"></i></div>
             <h3>تقييمات حقيقية</h3>
-            <p>قيّم تجربتك و ساعدنا بتحسين الخدمة للجميع</p>
+            <p>قيّم تجربتك وساعدنا نحسّن الخدمة للجميع</p>
           </div>
           <div class="feature-card">
-            <div class="feature-icon icon-orange"><i class="fa-solid fa-headset"></i></div>
-            <h3>دعم 24/7</h3>
-            <p>فريق دعم متاح على مدار الساعة لمساعدتك</p>
+            <div class="feature-icon icon-orange"><i class="fa-solid fa-mobile-screen"></i></div>
+            <h3>على كل جهاز</h3>
+            <p>نفس الحساب والبيانات من الجوال أو الكمبيوتر عبر Firebase</p>
           </div>
         </div>
-      </section>
+      </div>
 
-      <section class="cta-section">
+      <div class="cta-section">
         <div class="cta-bg">
           <div class="cta-blob"></div>
         </div>
         <div class="cta-content">
-          <h2>جاهز لرحلتك القادمة؟</h2>
-          <p>حمّل التطبيق أو سجّل الآن و احصل على أول 3 رحلات بنصف السعر!</p>
+          <h2>جاهز تتحرك داخل الناصرية؟</h2>
+          <p>سجّل الآن واحصل على خصم أول رحلاتك بكود الترحيب</p>
           <div class="cta-buttons">
             <button class="btn-primary big" onclick="openAuth('register','customer')">
               <i class="fa-solid fa-user-plus"></i> سجّل كزبون
@@ -172,7 +233,7 @@
             </button>
           </div>
         </div>
-      </section>
+      </div>
 
       <footer class="landing-footer">
         <div class="footer-grid">
@@ -266,9 +327,9 @@
             <div class="info-icon"><i class="fa-solid fa-chart-line"></i></div>
             <h3>أرقامنا</h3>
             <div class="stats-mini">
-              <div><strong>+50K</strong><span>زبون</span></div>
-              <div><strong>+3K</strong><span>سائق</span></div>
-              <div><strong>+200K</strong><span>رحلة</span></div>
+              <div><strong>+840</strong><span>زبون</span></div>
+              <div><strong>+46</strong><span>سائق</span></div>
+              <div><strong>+1.8K</strong><span>رحلة</span></div>
             </div>
           </div>
         </div>
@@ -554,7 +615,7 @@
             <span class="user-meta">
               <i class="fa-solid fa-star"></i> <span id="custRating">4.9</span>
               <span class="dot-sep">•</span>
-              <span id="custTrips">45 رحلة</span>
+              <span id="custTripsLabel">45 رحلة</span>
             </span>
           </div>
         </div>
@@ -666,7 +727,7 @@
                 <div class="promo-icon"><i class="fa-solid fa-percent"></i></div>
                 <div class="promo-info">
                   <strong>خصم 15%</strong>
-                  <span>عند الدفع بالمحفظة</span>
+                  <span>كود إضافي للرحلات</span>
                 </div>
                 <code>WALLET15</code>
               </div>
@@ -684,7 +745,6 @@
             <div></div>
           </div>
 
-          <!-- الخريطة مع المسار -->
           <div class="book-map-card">
             <div id="bookingMap" class="book-map"></div>
             <div class="map-mode-bar">
@@ -742,7 +802,7 @@
             <div class="block-head">
               <h3><i class="fa-solid fa-city"></i> أحياء الناصرية السريعة</h3>
             </div>
-            <div id="baghdadPlaces" class="baghdad-places"></div>
+            <div id="baghdadPlaces" class="baghdad-places nasiriyah-places"></div>
           </div>
 
           <div class="fare-breakdown" id="fareBreakdown">
@@ -1420,11 +1480,8 @@
           <i class="fa-solid fa-route"></i>
           <span>الرحلات</span>
         </button>
-        <button class="bnav-btn fab driver-fab" data-tab="driverEarnings">
-          <i class="fa-solid fa-coins"></i>
-        </button>
         <button class="bnav-btn" data-tab="driverEarnings">
-          <i class="fa-solid fa-chart-line"></i>
+          <i class="fa-solid fa-coins"></i>
           <span>الأرباح</span>
         </button>
         <button class="bnav-btn" data-tab="driverProfile">
@@ -1439,13 +1496,13 @@
       <header class="dash-header admin-header">
         <div class="dash-user">
           <div class="user-avatar admin-avatar"><i class="fa-solid fa-shield"></i></div>
-          <span id="cloudBadge" class="cloud-badge off"><i class="fa-solid fa-cloud"></i> …</span>
-          <div>
+          <div class="admin-id">
             <strong>مدير النظام</strong>
             <span class="user-meta">
               <i class="fa-solid fa-circle-check text-success"></i>
               <span>صلاحيات كاملة</span>
             </span>
+            <span id="cloudBadge" class="cloud-badge off"><i class="fa-solid fa-cloud"></i> محلي</span>
           </div>
         </div>
         <div class="header-actions">
@@ -1626,7 +1683,6 @@
               </div>
               <div class="setting-row"><label>أجرة كل توقف (د.ع)</label><input type="number" id="stopFee" value="1000" /></div>
               <div class="setting-row"><label>نسبة الرحلة المرجع (%)</label><input type="number" id="returnTripFeePercent" value="100" /></div>
-              </div>
               <button class="btn-primary" onclick="savePricing()">
                 <i class="fa-solid fa-floppy-disk"></i> حفظ التغييرات
               </button>
@@ -2191,12 +2247,9 @@
           <button class="close-btn" onclick="closeModal('paymentsModal')"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div class="promo-list">
-          <div class="promo-pick"><strong>نقداً</strong><span>متاح</span></div>
-          <div class="promo-pick"><strong>محفظة تكسي دجلة</strong><span>متاح</span></div>
-          <div class="promo-pick"><strong>زين كاش</strong><span>متاح</span></div>
-          <div class="promo-pick"><strong>آسيا حوالة</strong><span>متاح</span></div>
+          <div class="promo-pick"><strong>نقداً عند انتهاء الرحلة</strong><span>الطريقة الوحيدة حالياً</span></div>
         </div>
-        <button class="btn-primary full" onclick="walletAction('topup'); closeModal('paymentsModal');">شحن المحفظة</button>
+        <p class="muted small">المحفظة والشحن متوقفان. ادفع الأجرة نقداً للسائق.</p>
       </div>
     </div>
 
@@ -2237,4 +2290,3 @@
   <script src="js/main.js"></script>
 </body>
 </html>
-

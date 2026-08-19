@@ -19,12 +19,25 @@
     window.setTimeout(() => splash.remove(), 500);
   }
 
+  function toggleSiteNav(force) {
+    const drawer = byId('navDrawer');
+    const toggle = byId('navToggle');
+    if (!drawer) return;
+    const open = force === undefined ? !drawer.classList.contains('open') : !!force;
+    drawer.classList.toggle('open', open);
+    drawer.setAttribute('aria-hidden', open ? 'false' : 'true');
+    toggle?.classList.toggle('open', open);
+    toggle?.setAttribute('aria-expanded', open ? 'true' : 'false');
+    document.body.classList.toggle('nav-open', open);
+  }
+
   function showPage(pageId) {
     const target = byId(pageId);
     if (!target) return;
 
     all('.page').forEach((page) => page.classList.remove('active'));
     target.classList.add('active');
+    toggleSiteNav(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -83,7 +96,7 @@
       fillText('custName', fullName);
       fillText('greetName', user.firstName);
       fillText('custRating', user.rating);
-      fillText('custTrips', `${user.trips || 0} رحلة`);
+      fillText('custTripsLabel', `${user.trips || 0} رحلة`);
       fillText('totalTripsCount', user.trips || 0);
       showPage('customerApp');
       window.setTimeout(() => {
@@ -353,10 +366,20 @@
     window.App?.applySupportInfo?.();
   }
 
+  function refreshMaps() {
+    if (!window.Maps) return;
+    ['customerMap', 'bookingMap', 'trackingMap', 'driverMap'].forEach((name) => {
+      Maps.invalidateSize?.(name);
+    });
+  }
+
+  window.addEventListener('resize', refreshMaps);
+  window.visualViewport?.addEventListener('resize', refreshMaps);
+
   Object.assign(window, {
     revealApp, showPage, openAuth, quickLogin, logout, toast,
     closeModal, openNotifications, toggleDarkMode, mockUpload,
-    submitContact, forgotPassword,
+    submitContact, forgotPassword, toggleSiteNav,
     switchCustTab: (id) => switchDashboardTab(id),
     switchAdminTab: (id) => switchDashboardTab(id),
     openWallet: () => switchDashboardTab('custWallet')
