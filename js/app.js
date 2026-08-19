@@ -1,5 +1,6 @@
 /**
- * تطبيق تكسي دجلة — الحجز، التسعير، الرحلات، المحفظة، السائق، الأدمن
+ * تطبيق تكسي دجلة — الناصرية
+ * حجز، تسعير حسب نوع السيارة، تتبع حقيقي، مستمسكات، إعدادات
  */
 const App = (() => {
   'use strict';
@@ -22,7 +23,9 @@ const App = (() => {
     tags: [],
     searchTimer: null,
     requestTimer: null,
-    bound: false
+    bound: false,
+    pendingDocs: {},
+    trackPhase: null
   };
 
   const VEHICLE_META = {
@@ -35,8 +38,16 @@ const App = (() => {
   const PLACE_ICONS = {
     البيت: 'fa-house',
     العمل: 'fa-briefcase',
-    المول: 'fa-bag-shopping',
-    المطار: 'fa-plane'
+    الجامعة: 'fa-graduation-cap',
+    السوق: 'fa-store',
+    المول: 'fa-bag-shopping'
+  };
+
+  const DOC_LABELS = {
+    id: 'هوية الأحوال',
+    license: 'رخصة القيادة',
+    ownership: 'إسناد السيارة',
+    insurance: 'بوليصة التأمين'
   };
 
   function toast(message, type = 'info') {
@@ -69,6 +80,10 @@ const App = (() => {
     return window.Auth?.getSession() || null;
   }
 
+  function cityCenter() {
+    return window.Maps?.CITY_CENTER || [31.0452, 46.2561];
+  }
+
   function surgeInfo() {
     const hour = new Date().getHours();
     const pricing = DB.getPricing();
@@ -83,8 +98,9 @@ const App = (() => {
 
   function calcFareFor(type, distanceKm, coupon) {
     const pricing = DB.getPricing();
+    const kind = DB.normalizeCarType(type);
     const km = Math.max(Number(distanceKm) || 0, 0.4);
-    const perKm = pricing.perKm?.[type] || pricing.perKm?.comfort || 800;
+    const perKm = pricing.perKm?.[kind] || pricing.perKm?.comfort || 800;
     const surge = surgeInfo();
     const base = Number(pricing.base) || 1000;
     const raw = (base + km * perKm) * surge.multiplier;
@@ -94,7 +110,7 @@ const App = (() => {
     else if (coupon?.type === 'fixed') discount = coupon.discount;
     const total = Math.max(Math.round((beforeDiscount - discount) / 100) * 100, Number(pricing.minimum) || 3000);
     return {
-      type,
+      type: kind,
       km,
       base,
       perKm,
@@ -118,6 +134,10 @@ const App = (() => {
     return state.breakdown;
   }
 
+  function availableCount(type) {
+    return (DB.getDriversByType?.(type, true) || []).length;
+  }
+
   function renderFare() {
     const distanceEl = byId('routeDistance');
     const durationEl = byId('routeDuration');
@@ -125,13 +145,26 @@ const App = (() => {
     const btnPrice = byId('bookBtnPrice');
     const breakdown = byId('fareBreakdown');
 
+    all('#vehicleTypes .vehicle-card').forEach((card) => {
+      const type = card.dataset.type;
+      const count = availableCount(type);
+      let meta = card.querySelector('.v-avail');
+      if (!meta) {
+        meta = document.createElement('span');
+        meta.className = 'v-avail';
+        card.querySelector('.v-info')?.appendChild(meta);
+      }
+      meta.textContent = count ? `${count} سائق متاح` : 'لا يوجد سائق الآن';
+      card.classList.toggle('unavailable', count === 0);
+    });
+
     if (!state.route) {
       if (distanceEl) distanceEl.textContent = '--';
       if (durationEl) durationEl.textContent = '--';
       if (priceEl) priceEl.textContent = '--';
       if (btnPrice) btnPrice.textContent = '-- د.ع';
       all('.v-price-val').forEach((el) => { el.textContent = '--'; });
-      if (breakdown) breakdown.innerHTML = '<p class="muted">حدد الانطلاق والوجهة حتى يتحسب المبلغ فوراً</p>';
+      if (breakdown) breakdown.innerHTML = '<p class="muted">حدد الانطلاق والوجهة داخل الناصرية حتى يتحسب المبلغ فوراً</p>';
       return;
     }
 
@@ -150,6 +183,7 @@ const App = (() => {
     if (breakdown && state.breakdown) {
       const b = state.breakdown;
       breakdown.innerHTML = `
+        <div class="fb-row"><span>نوع الرحلة</span><strong>${VEHICLE_META[b.type]?.label || b.type}</strong></div>
         <div class="fb-row"><span>سعر الانطلاق</span><strong>${formatIQD(b.base)}</strong></div>
         <div class="fb-row"><span>المسافة ${formatKm(b.km)} × ${b.perKm.toLocaleString('en-US')}</span><strong>${formatIQD(b.km * b.perKm)}</strong></div>
         <div class="fb-row"><span>${b.surge.label}${b.surge.multiplier > 1 ? ` ×${b.surge.multiplier}` : ''}</span><strong>${b.surge.multiplier > 1 ? 'مفعّلة' : 'بدون زيادة'}</strong></div>
@@ -172,12 +206,20 @@ const App = (() => {
     fromBtn?.classList.toggle('active', mode === 'from' || (mode === 'auto' && !state.from));
     toBtn?.classList.toggle('active', mode === 'to' || (mode === 'auto' && !!state.from && !state.to));
     if (!hint) return;
-    if (!state.from) hint.innerHTML = '<i class="fa-solid fa-hand-pointer"></i> اضغط على الخريطة لتحديد <strong>نقطة الانطلاق</strong>';
-    else if (!state.to) hint.innerHTML = '<i class="fa-solid fa-hand-pointer"></i> هسه حدد <strong>الوجهة</strong> من الخريطة أو الأحياء';
+    if (!state.from) hint.innerHTML = '<i class="fa-solid fa-hand-pointer"></i> اضغط على الخريطة لتحديد <strong>نقطة الانطلاق داخل الناصرية</strong>';
+    else if (!state.to) hint.innerHTML = '<i class="fa-solid fa-hand-pointer"></i> هسه حدد <strong>الوجهة</strong> من الخريطة أو أحياء الناصرية';
     else hint.innerHTML = '<i class="fa-solid fa-route"></i> تقدر تسحب العلامات أو تغير النقاط. المبلغ محسوب تلقائياً';
   }
 
+  function rejectOutside() {
+    toast('الخدمة حالياً داخل الناصرية فقط. اختر نقطة داخل المدينة', 'error');
+  }
+
   function setFrom(lat, lng, label) {
+    if (Maps.isInsideCity && !Maps.isInsideCity(lat, lng)) {
+      rejectOutside();
+      return;
+    }
     const name = label || Maps.reverseGeocode(lat, lng);
     state.from = { lat, lng, label: name, coords: [lat, lng] };
     setInput('bookFrom', name);
@@ -188,6 +230,10 @@ const App = (() => {
   }
 
   function setTo(lat, lng, label) {
+    if (Maps.isInsideCity && !Maps.isInsideCity(lat, lng)) {
+      rejectOutside();
+      return;
+    }
     const name = label || Maps.reverseGeocode(lat, lng);
     state.to = { lat, lng, label: name, coords: [lat, lng] };
     setInput('bookTo', name);
@@ -227,25 +273,28 @@ const App = (() => {
   }
 
   function useCurrentLocation(target = 'from') {
-    toast('جاري تحديد موقعك...', 'info');
-    Maps.locateUser((coords) => {
-      const point = coords || Maps.BAGHDAD_CENTER;
+    toast('جاري تحديد موقعك داخل الناصرية...', 'info');
+    Maps.locateUser((coords, reason) => {
+      const point = coords || cityCenter();
+      if (reason === 'outside') {
+        toast('موقعك خارج الناصرية. تم توسيط الخريطة على مركز المدينة', 'error');
+      }
       const label = Maps.reverseGeocode(point[0], point[1]);
       if (target === 'to') setTo(point[0], point[1], label);
       else setFrom(point[0], point[1], 'موقعي الحالي · ' + label);
-      toast('تم تحديد الموقع', 'success');
+      if (reason !== 'outside') toast('تم تحديد الموقع', 'success');
     });
   }
 
   function locateMe() {
-    Maps.locateUser((coords) => {
-      Maps.flyTo(coords || Maps.BAGHDAD_CENTER, 15);
-      toast('تم توسيط الخريطة على موقعك', 'success');
+    Maps.locateUser((coords, reason) => {
+      Maps.flyTo(coords || cityCenter(), 15);
+      toast(reason === 'outside' ? 'خدمتنا داخل الناصرية فقط' : 'تم توسيط الخريطة على موقعك', reason === 'outside' ? 'error' : 'success');
     });
   }
 
-  function renderBaghdadPlaces() {
-    const box = byId('baghdadPlaces');
+  function renderCityPlaces() {
+    const box = byId('baghdadPlaces') || byId('nasiriyahPlaces');
     if (!box) return;
     box.innerHTML = Maps.PLACES.map((p) =>
       `<button type="button" class="place-chip" data-lat="${p.coords[0]}" data-lng="${p.coords[1]}" data-name="${p.name}">
@@ -311,12 +360,12 @@ const App = (() => {
     const input = byId('placeSearch');
     const box = byId('searchResults');
     const query = input?.value.trim();
-    if (!query) return toast('اكتب اسم المنطقة أو المكان', 'error');
+    if (!query) return toast('اكتب اسم الحي أو المكان في الناصرية', 'error');
     const results = await Maps.searchPlace(query);
     if (!box) return;
     if (!results.length) {
       box.classList.remove('hidden');
-      box.innerHTML = '<div class="search-result-item"><span>ماكو نتائج بهالاسم</span></div>';
+      box.innerHTML = '<div class="search-result-item"><span>ماكو نتائج بهالاسم داخل الناصرية</span></div>';
       return;
     }
     box.classList.remove('hidden');
@@ -337,8 +386,9 @@ const App = (() => {
 
   function startBookingTo(lat, lng, label) {
     switchCustTabSafe('custBook');
-    const current = Maps.getCurrentCoords() || Maps.BAGHDAD_CENTER;
-    setFrom(current[0], current[1], 'موقعي الحالي');
+    const current = Maps.getCurrentCoords();
+    const origin = (current && Maps.isInsideCity(current[0], current[1])) ? current : cityCenter();
+    setFrom(origin[0], origin[1], current ? 'موقعي الحالي' : 'مركز الناصرية');
     setTo(lat, lng, label);
     Maps.setPickMode('auto');
     updatePickHint();
@@ -351,7 +401,6 @@ const App = (() => {
   function openDestPicker() {
     Maps.setPickMode('to');
     updatePickHint();
-    const modal = byId('destPickerModal');
     const list = byId('destPickerList');
     if (list) {
       list.innerHTML = Maps.PLACES.map((p) => `
@@ -372,10 +421,18 @@ const App = (() => {
   }
 
   function selectVehicle(type, card) {
-    state.vehicle = type || 'comfort';
+    const kind = DB.normalizeCarType(type || 'comfort');
+    const changed = state.vehicle !== kind;
+    state.vehicle = kind;
     all('#vehicleTypes .vehicle-card').forEach((el) => el.classList.remove('selected'));
-    (card || document.querySelector(`#vehicleTypes .vehicle-card[data-type="${type}"]`))?.classList.add('selected');
+    const target = card?.closest?.('.vehicle-card') || card || document.querySelector(`#vehicleTypes .vehicle-card[data-type="${kind}"]`);
+    target?.classList.add('selected');
     recalc();
+    if (!changed) return;
+    const count = availableCount(kind);
+    toast(count
+      ? `تم اختيار ${VEHICLE_META[kind].label} — ${count} سائق متاح`
+      : `تم اختيار ${VEHICLE_META[kind].label} — حالياً ماكو سائق بهالنوع`, count ? 'success' : 'info');
   }
 
   function applyCoupon() {
@@ -417,11 +474,13 @@ const App = (() => {
     applyCoupon();
   }
 
-  function nearestDriver() {
-    const drivers = Maps.getApprovedOnlineDrivers?.() || [];
+  function nearestDriver(type) {
+    const wanted = DB.normalizeCarType(type || state.vehicle);
+    let drivers = DB.getDriversByType?.(wanted, true) || [];
     if (!drivers.length) {
-      return (DB.getDrivers?.() || []).find((d) => d.status === 'approved') || null;
+      drivers = (DB.getDrivers?.() || []).filter((d) => d.status === 'approved' && DB.normalizeCarType(d.carType) === wanted);
     }
+    if (!drivers.length) return null;
     if (!state.from) return drivers[0];
     return drivers.slice().sort((a, b) => {
       const da = Maps.haversine(state.from.coords, [a.location.lat, a.location.lng]);
@@ -432,7 +491,7 @@ const App = (() => {
 
   function findDriver() {
     if (!state.from || !state.to) {
-      toast('حدد نقطة الانطلاق والوجهة أولاً', 'error');
+      toast('حدد نقطة الانطلاق والوجهة داخل الناصرية أولاً', 'error');
       Maps.setPickMode(state.from ? 'to' : 'from');
       updatePickHint();
       return;
@@ -452,13 +511,19 @@ const App = (() => {
       return;
     }
 
+    const driver = nearestDriver(state.vehicle);
+    if (!driver) {
+      toast(`ماكو سائق ${VEHICLE_META[state.vehicle].label} متاح هسه. جرّب نوع ثاني`, 'error');
+      return;
+    }
+
     const steps = all('#searchSteps .search-step');
     steps.forEach((s, i) => {
       s.classList.remove('done', 'active');
       if (i < 2) s.classList.add('done');
       if (i === 2) s.classList.add('active');
     });
-    if (byId('searchStatus')) byId('searchStatus').textContent = 'نتأكد من السائقين القريبين منك';
+    if (byId('searchStatus')) byId('searchStatus').textContent = `ندور على أقرب سائق ${VEHICLE_META[state.vehicle].label} بالناصرية`;
     openModal('searchingModal');
 
     window.clearTimeout(state.searchTimer);
@@ -470,19 +535,20 @@ const App = (() => {
     }, 1100);
 
     state.requestTimer = window.setTimeout(() => {
-      const driver = nearestDriver();
-      if (!driver) {
-        closeModal('searchingModal');
-        toast('ماكو سائق متاح هسه، حاول بعد قليل', 'error');
-        return;
-      }
       confirmDriver(driver);
-    }, 2400);
+    }, 2200);
+  }
+
+  function etaFromDriver(driver) {
+    if (!driver?.location || !state.from) return 4;
+    const km = Maps.haversine(state.from.coords, [driver.location.lat, driver.location.lng]);
+    return Math.max(2, Math.round(km * 3.1));
   }
 
   function confirmDriver(driver) {
     const session = currentSession();
     const user = currentUser();
+    const eta = etaFromDriver(driver);
     const ride = DB.addRide({
       customerId: session?.userId,
       driverId: driver.id,
@@ -492,8 +558,10 @@ const App = (() => {
       to: state.to.label,
       fromCoords: state.from.coords,
       toCoords: state.to.coords,
+      driverStart: [driver.location.lat, driver.location.lng],
       distance: Number(state.route.distance.toFixed(1)),
       duration: Math.round(state.route.duration),
+      etaPickup: eta,
       fare: state.fare,
       type: state.vehicle,
       status: 'active',
@@ -525,23 +593,26 @@ const App = (() => {
       from: ride.from,
       to: ride.to,
       fare: ride.fare,
-      distance: ride.distance
+      distance: ride.distance,
+      type: ride.type,
+      driverId: driver.id
     });
 
     DB.addNotification({
       userId: session?.userId,
       userType: 'customer',
       title: 'تم قبول رحلتك',
-      message: `${driver.firstName} ${driver.lastName} في الطريق إليك`,
+      message: `${driver.firstName} ${driver.lastName} جاي من ${driver.location.area || 'الناصرية'} خلال ${eta} دقائق`,
       type: 'trip'
     });
 
     closeModal('searchingModal');
-    fillFoundDriver(driver, ride);
+    fillFoundDriver(driver, ride, eta);
     openModal('driverFoundModal');
   }
 
-  function fillFoundDriver(driver, ride) {
+  function fillFoundDriver(driver, ride, eta) {
+    const minutes = eta || ride.etaPickup || 4;
     const card = document.querySelector('#driverFoundModal .found-driver-card');
     if (card) {
       card.innerHTML = `
@@ -550,12 +621,13 @@ const App = (() => {
           <strong>${driver.firstName} ${driver.lastName}</strong>
           <span class="muted"><i class="fa-solid fa-star text-yellow"></i> ${driver.rating} (${driver.trips || 0} رحلة)</span>
           <span class="car-plate">${driver.carModel || ''} • ${driver.color || ''} • ${driver.plate || ''}</span>
+          <span class="muted small">ينطلق من ${driver.location?.area || 'الناصرية'}</span>
         </div>
-        <div class="fd-eta"><strong>3</strong><span>دقيقة</span></div>
+        <div class="fd-eta"><strong>${minutes}</strong><span>دقيقة</span></div>
       `;
     }
     const p = document.querySelector('#driverFoundModal > p');
-    if (p) p.textContent = `${driver.firstName} ${driver.lastName} في طريقه إليك`;
+    if (p) p.textContent = `${driver.firstName} ${driver.lastName} جاي من ${driver.location?.area || 'الناصرية'} إليك`;
     if (byId('tripFromText2')) byId('tripFromText2').textContent = ride.from;
     if (byId('tripToText2')) byId('tripToText2').textContent = ride.to;
     if (byId('tripDistText2')) byId('tripDistText2').textContent = formatKm(ride.distance);
@@ -566,13 +638,20 @@ const App = (() => {
     closeModal('driverFoundModal');
     fillTripScreen();
     switchCustTabSafe('custTrip');
+    startLiveTracking();
+  }
+
+  function startLiveTracking() {
     const ride = state.ride;
-    if (ride) {
-      Maps.initTrackingMap?.();
-      Maps.startTracking(ride.fromCoords, ride.toCoords, {
-        firstName: (ride.driver || 'ك').split(' ')[0]
-      });
-    }
+    if (!ride) return;
+    const driver = DB.findDriverById(ride.driverId) || {
+      firstName: (ride.driver || 'ك').split(' ')[0],
+      location: ride.driverStart ? { lat: ride.driverStart[0], lng: ride.driverStart[1] } : null
+    };
+    setTripStep(1);
+    state.trackPhase = 'to_pickup';
+    Maps.initTrackingMap?.();
+    Maps.startTracking(ride.fromCoords, ride.toCoords, driver);
   }
 
   function fillTripScreen() {
@@ -594,7 +673,7 @@ const App = (() => {
     if (byId('tripFromText')) byId('tripFromText').textContent = ride.from;
     if (byId('tripToText')) byId('tripToText').textContent = ride.to;
     if (byId('tripDistance')) byId('tripDistance').textContent = formatKm(ride.distance);
-    if (byId('tripETA')) byId('tripETA').textContent = formatMin(ride.duration || ride.distance * 2.4);
+    if (byId('tripETA')) byId('tripETA').textContent = formatMin(ride.etaPickup || ride.duration || ride.distance * 2.6);
     if (byId('tripFare')) byId('tripFare').textContent = formatIQD(ride.fare);
   }
 
@@ -617,6 +696,7 @@ const App = (() => {
       return;
     }
     if (!window.confirm('تأكيد إلغاء الرحلة؟ قد تُحتسب رسوم إلغاء بسيطة.')) return;
+    Maps.stopTracking?.();
     DB.updateRide(state.ride.id, { status: 'cancelled' });
     state.ride = null;
     try { localStorage.removeItem('dijla_active_ride'); } catch (_) {}
@@ -635,28 +715,31 @@ const App = (() => {
 
   function simulateArrival() {
     if (!state.ride) return toast('ماكو رحلة نشطة', 'error');
-    setTripStep(2);
-    toast('السائق وصل، الرحلة بدأت', 'success');
-    window.setTimeout(() => {
+    if (state.trackPhase === 'to_dest') {
       setTripStep(3);
       completeCustomerTrip();
-    }, 1400);
+      return;
+    }
+    setTripStep(2);
+    toast('السائق وصل لموقعك، الرحلة بدأت', 'success');
+    state.trackPhase = 'to_dest';
   }
 
   function completeCustomerTrip() {
     if (!state.ride) return;
+    Maps.stopTracking?.();
     DB.updateRide(state.ride.id, { status: 'completed' });
     const session = currentSession();
     const user = currentUser();
-    if (user) {
-      DB.updateCustomer(user.id, { trips: (user.trips || 0) + 1 });
-    }
+    if (user) DB.updateCustomer(user.id, { trips: (user.trips || 0) + 1 });
     if (state.ride.driverId) {
       const driver = DB.findDriverById(state.ride.driverId);
       if (driver) {
+        const commission = (DB.getPricing().commission || 15) / 100;
+        const net = Math.round(state.ride.fare * (1 - commission));
         DB.updateDriver(driver.id, {
           trips: (driver.trips || 0) + 1,
-          earnings: (driver.earnings || 0) + state.ride.fare
+          earnings: (driver.earnings || 0) + net
         });
       }
     }
@@ -727,9 +810,9 @@ const App = (() => {
 
   function callDriver() {
     const ride = state.ride;
-    const driver = ride ? DB.findDriverById(ride.driverId) : null;
+    const driver = ride ? DB.findDriverById(ride.driverId) : currentUser();
     const phone = driver?.phone || '0790 111 2233';
-    toast(`اتصال بالسائق: ${phone}`, 'success');
+    toast(`اتصال: ${phone}`, 'success');
     try { window.location.href = `tel:${phone.replace(/\s/g, '')}`; } catch (_) {}
   }
 
@@ -737,9 +820,8 @@ const App = (() => {
     const list = byId('chatMessages');
     if (list && !list.dataset.ready) {
       list.innerHTML = `
-        <div class="chat-bubble them">مرحباً، أنا في الطريق إليك الآن 🚕</div>
+        <div class="chat-bubble them">مرحباً، أنا بالناصرية وفي الطريق إليك الآن 🚕</div>
         <div class="chat-bubble me">تمام، أنتظرك عند الباب</div>
-        <div class="chat-bubble them">وصلت خلال 3 دقائق</div>
       `;
       list.dataset.ready = '1';
     }
@@ -760,22 +842,22 @@ const App = (() => {
     window.setTimeout(() => {
       const reply = document.createElement('div');
       reply.className = 'chat-bubble them';
-      reply.textContent = 'تم، في الطريق.';
+      reply.textContent = 'تم، أكمل الطريق حسب المسار.';
       list.appendChild(reply);
       list.scrollTop = list.scrollHeight;
     }, 700);
   }
 
   function emergencyCall() {
-    if (!window.confirm('اتصال بالطوارئ (115) ومشاركة موقع الرحلة؟')) return;
+    if (!window.confirm('اتصال بالطوارئ (115) ومشاركة موقع الرحلة داخل الناصرية؟')) return;
     toast('تم إرسال موقعك لجهات الطوارئ والاتصال بـ 115', 'success');
   }
 
   function shareTrip() {
     const ride = state.ride;
     const text = ride
-      ? `أتابع رحلتي على تكسي دجلة من ${ride.from} إلى ${ride.to} — الأجرة ${formatIQD(ride.fare)}`
-      : 'أشارك رحلتي عبر تكسي دجلة';
+      ? `أتابع رحلتي على تكسي دجلة الناصرية من ${ride.from} إلى ${ride.to} — الأجرة ${formatIQD(ride.fare)}`
+      : 'أشارك رحلتي عبر تكسي دجلة الناصرية';
     if (navigator.share) {
       navigator.share({ title: 'تكسي دجلة', text }).catch(() => {});
     } else {
@@ -832,7 +914,7 @@ const App = (() => {
           <div class="trip-fare-big">${Number(r.fare).toLocaleString('en-US')} <small>د.ع</small></div>
         </div>
         <div class="trip-card-foot">
-          <span>${r.date || ''} • ${r.driver || ''}</span>
+          <span>${r.date || ''} • ${VEHICLE_META[r.type]?.label || ''} • ${r.driver || ''}</span>
           <span class="trip-status ${r.status}">${statusLabel(r.status)}</span>
         </div>
       </article>
@@ -840,14 +922,13 @@ const App = (() => {
   }
 
   function statusLabel(status) {
-    return { completed: 'مكتملة', active: 'قيد التنفيذ', cancelled: 'ملغية', searching: 'جاري البحث' }[status] || status;
+    return { completed: 'مكتملة', active: 'قيد التنفيذ', cancelled: 'ملغية', searching: 'جاري البحث', pending: 'معلق', paid: 'مدفوع' }[status] || status;
   }
 
   function renderWallet() {
     const user = currentUser();
     const session = currentSession();
     if (!user || !session) return;
-    const balance = formatIQD(user.wallet || 0);
     if (byId('walletBalance')) byId('walletBalance').innerHTML = `${Number(user.wallet || 0).toLocaleString('en-US')} <small>د.ع</small>`;
     if (byId('quickBalance')) byId('quickBalance').innerHTML = `${Number(user.wallet || 0).toLocaleString('en-US')} <small>د.ع</small>`;
     const list = byId('walletTransactions');
@@ -961,9 +1042,41 @@ const App = (() => {
     openModal('promoModal');
   }
 
+  function openEditProfile() {
+    const user = currentUser();
+    const session = currentSession();
+    if (!user || !session) return;
+    if (byId('editFirstName')) byId('editFirstName').value = user.firstName || '';
+    if (byId('editLastName')) byId('editLastName').value = user.lastName || '';
+    if (byId('editPhone')) byId('editPhone').value = user.phone || '';
+    if (byId('editEmail')) byId('editEmail').value = user.email || '';
+    openModal('editProfileModal');
+  }
+
+  function saveProfile() {
+    const session = currentSession();
+    const user = currentUser();
+    if (!session || !user) return;
+    const updates = {
+      firstName: byId('editFirstName')?.value.trim() || user.firstName,
+      lastName: byId('editLastName')?.value.trim() || user.lastName,
+      phone: byId('editPhone')?.value.trim() || user.phone
+    };
+    if (session.role === 'customer') DB.updateCustomer(user.id, updates);
+    else if (session.role === 'driver') DB.updateDriver(user.id, updates);
+    closeModal('editProfileModal');
+    toast('تم حفظ بياناتك', 'success');
+    refreshCustomerHeader();
+    refreshDriverHeader();
+  }
+
+  function openPaymentMethods() {
+    openModal('paymentsModal');
+  }
+
   function refreshCustomerHeader() {
     const user = currentUser();
-    if (!user) return;
+    if (!user || !user.firstName) return;
     const fullName = `${user.firstName} ${user.lastName}`;
     const set = (id, val) => { if (byId(id)) byId(id).textContent = val; };
     set('custAvatar', user.firstName?.[0] || 'ز');
@@ -1008,12 +1121,12 @@ const App = (() => {
     btn?.classList.toggle('offline', !next);
     if (byId('onlineText')) byId('onlineText').textContent = next ? 'متصل' : 'غير متصل';
     if (byId('waitingState')) byId('waitingState').classList.toggle('hidden', !next);
-    toast(next ? 'أنت متصل وتستقبل الطلبات' : 'تم إيقاف استقبال الطلبات', 'success');
+    toast(next ? 'أنت متصل وتستقبل الطلبات داخل الناصرية' : 'تم إيقاف استقبال الطلبات', 'success');
   }
 
   function refreshDriverHeader() {
     const driver = currentUser();
-    if (!driver) return;
+    if (!driver || !driver.firstName) return;
     if (byId('driverAvatar')) byId('driverAvatar').textContent = driver.firstName?.[0] || 'س';
     if (byId('driverName')) byId('driverName').textContent = `${driver.firstName} ${driver.lastName}`;
     if (byId('driverRating')) byId('driverRating').textContent = driver.rating;
@@ -1022,8 +1135,21 @@ const App = (() => {
     if (byId('driverProfileName')) byId('driverProfileName').textContent = `${driver.firstName} ${driver.lastName}`;
     if (byId('driverCar')) byId('driverCar').textContent = driver.carModel || '';
     if (byId('driverPlate')) byId('driverPlate').textContent = driver.plate || '';
+    if (byId('driverArea')) byId('driverArea').textContent = `${driver.location?.area || 'الناصرية'}، الناصرية`;
+    if (byId('todayEarnings')) byId('todayEarnings').innerHTML = `${Number(Math.round((driver.earnings || 0) * 0.04)).toLocaleString('en-US')} <small>د.ع</small>`;
     byId('onlineToggle')?.classList.toggle('offline', !driver.online);
     if (byId('onlineText')) byId('onlineText').textContent = driver.online ? 'متصل' : 'غير متصل';
+    renderDriverDocsPreview(driver);
+  }
+
+  function renderDriverDocsPreview(driver) {
+    const box = byId('driverDocsStatus');
+    if (!box || !driver) return;
+    const kinds = ['id', 'license', 'ownership', 'insurance'];
+    box.innerHTML = kinds.map((k) => {
+      const ok = DB.hasDocument(driver.documents?.[k]);
+      return `<span class="doc-chip ${ok ? 'ok' : 'missing'}"><i class="fa-solid fa-${ok ? 'check' : 'xmark'}"></i> ${DOC_LABELS[k]}</span>`;
+    }).join('');
   }
 
   function renderDriverTrips() {
@@ -1050,7 +1176,9 @@ const App = (() => {
   }
 
   function showIncomingFromPending() {
-    const pending = (DB.getPendingRequests?.() || [])[0];
+    const session = currentSession();
+    const pendingAll = DB.getPendingRequests?.() || [];
+    const pending = pendingAll.find((p) => !p.driverId || p.driverId === session?.userId) || pendingAll[0];
     const box = byId('incomingRequest');
     if (!box) return;
     if (!pending) {
@@ -1060,7 +1188,7 @@ const App = (() => {
     box.classList.remove('hidden');
     box.dataset.req = pending.id;
     const fromEl = box.querySelector('.rd-row:first-child strong');
-    const toEl = box.querySelector('.rd-row:last-child strong');
+    const toEl = box.querySelectorAll('.rd-row strong')[1];
     if (fromEl) fromEl.textContent = pending.from;
     if (toEl) toEl.textContent = pending.to;
     const fare = box.querySelector('.fare-item.highlight strong');
@@ -1092,48 +1220,173 @@ const App = (() => {
 
   function acceptRequest() {
     window.clearInterval(state.requestTimer);
-    byId('incomingRequest')?.classList.add('hidden');
+    const box = byId('incomingRequest');
+    if (box?.dataset.req) DB.clearPendingRequest(Number(box.dataset.req));
+    box?.classList.add('hidden');
     byId('waitingState')?.classList.add('hidden');
     byId('activeTrip')?.classList.remove('hidden');
-    toast('تم قبول الطلب، توجّه للزبون', 'success');
+    toast('تم قبول الطلب، توجّه للزبون حسب المسار', 'success');
   }
 
   function completeTrip() {
     byId('activeTrip')?.classList.add('hidden');
     byId('waitingState')?.classList.remove('hidden');
     toast('تم إنهاء الرحلة وإضافة الأجرة', 'success');
+    renderDriverTrips();
+    refreshDriverHeader();
   }
 
   function requestWithdrawal() {
+    const driver = currentUser();
+    if (!driver) return;
+    const amount = Number(window.prompt('مبلغ السحب (د.ع)', '50000'));
+    if (!amount || amount <= 0) return;
+    DB.addWithdrawal({ driverId: driver.id, amount, status: 'pending' });
     toast('تم إرسال طلب السحب، يصل خلال 24 ساعة', 'success');
+    renderPayouts();
   }
 
   function editVehicle() {
     const driver = currentUser();
     if (!driver) return;
-    const model = window.prompt('موديل السيارة', driver.carModel || '');
-    if (model === null) return;
-    const plate = window.prompt('رقم اللوحة', driver.plate || '');
-    if (plate === null) return;
-    DB.updateDriver(driver.id, { carModel: model, plate });
+    if (byId('vehModel')) byId('vehModel').value = driver.carModel || '';
+    if (byId('vehPlate')) byId('vehPlate').value = driver.plate || '';
+    if (byId('vehColor')) byId('vehColor').value = driver.color || '';
+    if (byId('vehType')) byId('vehType').value = DB.normalizeCarType(driver.carType);
+    openModal('vehicleModal');
+  }
+
+  function saveVehicle() {
+    const driver = currentUser();
+    if (!driver) return;
+    DB.updateDriver(driver.id, {
+      carModel: byId('vehModel')?.value.trim() || driver.carModel,
+      plate: byId('vehPlate')?.value.trim() || driver.plate,
+      color: byId('vehColor')?.value.trim() || driver.color,
+      carType: byId('vehType')?.value || driver.carType
+    });
+    closeModal('vehicleModal');
     refreshDriverHeader();
     toast('تم تحديث بيانات السيارة', 'success');
   }
 
+  function openDriverDocs() {
+    const driver = currentUser();
+    if (!driver) return;
+    renderDocsManager(driver, true);
+    openModal('docsModal');
+  }
+
+  function renderDocsManager(driver, canUpload) {
+    const box = byId('docsManager');
+    if (!box) return;
+    const kinds = ['id', 'license', 'ownership', 'insurance'];
+    box.innerHTML = kinds.map((k) => {
+      const doc = driver.documents?.[k];
+      const ok = DB.hasDocument(doc);
+      return `
+        <div class="doc-manage-row">
+          <div>
+            <strong>${DOC_LABELS[k]}</strong>
+            <small>${ok ? (doc.name || 'مرفوعة') + ' — ' + (doc.uploadedAt || '') : 'غير مرفوعة'}</small>
+          </div>
+          <div class="doc-manage-actions">
+            ${ok ? `<button type="button" class="btn-secondary" data-view="${k}">عرض</button>` : ''}
+            ${canUpload ? `<label class="btn-primary file-label">رفع<input type="file" accept="image/*,.pdf" data-doc="${k}" hidden /></label>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+    box.querySelectorAll('input[type="file"]').forEach((input) => {
+      input.addEventListener('change', () => handleDocFile(driver.id, input.dataset.doc, input.files?.[0], true));
+    });
+    box.querySelectorAll('[data-view]').forEach((btn) => {
+      btn.addEventListener('click', () => viewDocument(driver.id, btn.dataset.view));
+    });
+  }
+
+  async function handleDocFile(driverId, kind, file, refresh) {
+    if (!file) return;
+    if (file.size > 4 * 1024 * 1024) return toast('حجم الملف أكبر من 4 ميغابايت', 'error');
+    const dataUrl = await readFileAsDataUrl(file);
+    await DB.saveDriverDocument(driverId, kind, {
+      name: file.name,
+      mime: file.type,
+      size: file.size,
+      data: dataUrl
+    });
+    toast(`تم رفع ${DOC_LABELS[kind] || kind}`, 'success');
+    if (refresh) {
+      const driver = DB.findDriverById(driverId);
+      renderDocsManager(driver, true);
+      refreshDriverHeader();
+    }
+  }
+
+  function readFileAsDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function viewDocument(driverId, kind) {
+    const stored = await DB.getDriverDocumentFile(driverId, kind);
+    const driver = DB.findDriverById(driverId);
+    const meta = driver?.documents?.[kind];
+    const frame = byId('docViewerBody');
+    if (!frame) return;
+    if (byId('docViewerTitle')) byId('docViewerTitle').textContent = DOC_LABELS[kind] || 'المستند';
+    if (stored?.data) {
+      if ((stored.mime || '').includes('pdf')) {
+        frame.innerHTML = `<iframe src="${stored.data}" title="مستند"></iframe>`;
+      } else {
+        frame.innerHTML = `<img src="${stored.data}" alt="${stored.name || kind}" />`;
+      }
+    } else {
+      frame.innerHTML = `<div class="empty-state">${meta?.name || 'تم تسجيل المستند'} — لا توجد معاينة محفوظة لهذا الملف التجريبي</div>`;
+    }
+    openModal('docViewerModal');
+  }
+
   function renderPayouts() {
     const list = byId('payoutsList');
+    const driver = currentUser();
     if (!list) return;
-    list.innerHTML = [
-      { d: '2026-08-12', a: 180000 },
-      { d: '2026-08-05', a: 150000 },
-      { d: '2026-07-28', a: 210000 }
-    ].map((p) => `
+    const items = DB.getWithdrawals?.(driver?.id) || [];
+    const rows = items.length ? items : [
+      { createdAt: '2026-08-12', amount: 180000, status: 'paid' }
+    ];
+    list.innerHTML = rows.map((p) => `
       <div class="txn-row">
         <div class="txn-icon in"><i class="fa-solid fa-building-columns"></i></div>
-        <div class="txn-info"><strong>سحب إلى الحساب</strong><span>${p.d}</span></div>
-        <div class="txn-amount plus">+${p.a.toLocaleString('en-US')}</div>
+        <div class="txn-info"><strong>سحب إلى الحساب</strong><span>${p.createdAt} • ${statusLabel(p.status)}</span></div>
+        <div class="txn-amount plus">+${Number(p.amount).toLocaleString('en-US')}</div>
       </div>
     `).join('');
+  }
+
+  function openBankAccount() {
+    const driver = currentUser();
+    if (!driver) return;
+    if (byId('bankName')) byId('bankName').value = driver.bank?.name || '';
+    if (byId('bankAccount')) byId('bankAccount').value = driver.bank?.account || '';
+    openModal('bankModal');
+  }
+
+  function saveBankAccount() {
+    const driver = currentUser();
+    if (!driver) return;
+    DB.updateDriver(driver.id, {
+      bank: {
+        name: byId('bankName')?.value.trim() || '',
+        account: byId('bankAccount')?.value.trim() || ''
+      }
+    });
+    closeModal('bankModal');
+    toast('تم حفظ الحساب البنكي', 'success');
   }
 
   /* ========== الأدمن ========== */
@@ -1170,10 +1423,24 @@ const App = (() => {
         </tr>
       `).join('');
     }
-    renderAdminDrivers('pending');
+    renderAdminDrivers(document.querySelector('#adminDrivers .ft-tab.active')?.dataset.filter || 'pending');
     renderAdminUsers();
     fillPricingForm();
+    fillSettingsForm();
     drawAdminCharts();
+    renderDbStatus();
+  }
+
+  function renderDbStatus() {
+    const box = byId('dbStatusBox');
+    if (!box) return;
+    const snap = DB.getData();
+    box.innerHTML = `
+      <div class="ss-item"><span>الزبائن</span><strong>${snap.users.customers.length}</strong></div>
+      <div class="ss-item"><span>السائقون</span><strong>${snap.users.drivers.length}</strong></div>
+      <div class="ss-item"><span>الرحلات</span><strong>${snap.rides.length}</strong></div>
+      <div class="ss-item"><span>المدينة</span><strong>${snap.city}</strong></div>
+    `;
   }
 
   function renderAdminDrivers(filter = 'pending') {
@@ -1187,15 +1454,17 @@ const App = (() => {
           <div class="user-avatar">${d.firstName?.[0] || 'س'}</div>
           <div>
             <strong>${d.firstName} ${d.lastName}</strong>
-            <span class="muted">${d.carModel || ''} • ${d.phone || ''}</span>
+            <span class="muted">${d.carModel || ''} • ${VEHICLE_META[DB.normalizeCarType(d.carType)]?.label || ''} • ${d.phone || ''}</span>
           </div>
         </div>
         <div class="docs-list">
-          <span class="doc-chip ${d.documents?.id ? 'ok' : 'missing'}"><i class="fa-solid fa-${d.documents?.id ? 'check' : 'xmark'}"></i> هوية</span>
-          <span class="doc-chip ${d.documents?.license ? 'ok' : 'missing'}"><i class="fa-solid fa-${d.documents?.license ? 'check' : 'xmark'}"></i> رخصة</span>
-          <span class="doc-chip ${d.documents?.insurance ? 'ok' : 'missing'}"><i class="fa-solid fa-${d.documents?.insurance ? 'check' : 'xmark'}"></i> تأمين</span>
+          <span class="doc-chip ${DB.hasDocument(d.documents?.id) ? 'ok' : 'missing'}"><i class="fa-solid fa-${DB.hasDocument(d.documents?.id) ? 'check' : 'xmark'}"></i> هوية</span>
+          <span class="doc-chip ${DB.hasDocument(d.documents?.license) ? 'ok' : 'missing'}"><i class="fa-solid fa-${DB.hasDocument(d.documents?.license) ? 'check' : 'xmark'}"></i> رخصة</span>
+          <span class="doc-chip ${DB.hasDocument(d.documents?.ownership) ? 'ok' : 'missing'}"><i class="fa-solid fa-${DB.hasDocument(d.documents?.ownership) ? 'check' : 'xmark'}"></i> إسناد</span>
+          <span class="doc-chip ${DB.hasDocument(d.documents?.insurance) ? 'ok' : 'missing'}"><i class="fa-solid fa-${DB.hasDocument(d.documents?.insurance) ? 'check' : 'xmark'}"></i> تأمين</span>
         </div>
         <div class="drv-actions">
+          <button class="btn-secondary" data-viewdocs="${d.id}">المستمسكات</button>
           ${d.status !== 'approved' ? `<button class="btn-approve" data-id="${d.id}" data-act="approved">اعتماد</button>` : ''}
           ${d.status !== 'blocked' ? `<button class="btn-reject-sm" data-id="${d.id}" data-act="blocked">حظر</button>` : `<button class="btn-approve" data-id="${d.id}" data-act="approved">فك الحظر</button>`}
         </div>
@@ -1204,8 +1473,25 @@ const App = (() => {
     list.querySelectorAll('button[data-id]').forEach((btn) => {
       btn.addEventListener('click', () => {
         DB.updateDriverStatus(Number(btn.dataset.id), btn.dataset.act);
+        if (btn.dataset.act === 'approved') {
+          DB.addNotification({
+            userId: Number(btn.dataset.id),
+            userType: 'driver',
+            title: 'تم اعتماد حسابك',
+            message: 'يمكنك الآن استقبال الطلبات داخل الناصرية',
+            type: 'system'
+          });
+        }
         toast(btn.dataset.act === 'approved' ? 'تم اعتماد السائق' : 'تم تحديث حالة السائق', 'success');
         renderAdmin();
+      });
+    });
+    list.querySelectorAll('[data-viewdocs]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const driver = DB.findDriverById(Number(btn.dataset.viewdocs));
+        if (!driver) return;
+        renderDocsManager(driver, false);
+        openModal('docsModal');
       });
     });
   }
@@ -1236,6 +1522,36 @@ const App = (() => {
     if (byId('priceMin')) byId('priceMin').value = p.minimum;
     if (byId('priceBase')) byId('priceBase').value = p.base;
     if (byId('commissionRate')) byId('commissionRate').value = p.commission;
+    const s = DB.getSettings();
+    if (byId('newUserDiscount')) byId('newUserDiscount').value = s.newUserDiscount;
+    if (byId('welcomeCode')) byId('welcomeCode').value = s.welcomeCode;
+  }
+
+  function fillSettingsForm() {
+    const s = DB.getSettings();
+    if (byId('searchRadius')) byId('searchRadius').value = s.searchRadiusKm;
+    if (byId('coveredCities')) byId('coveredCities').value = 'الناصرية';
+    if (byId('maxWait')) byId('maxWait').value = s.maxWaitMin;
+    setSwitch('swNotifyRequest', s.notifyNewRequest);
+    setSwitch('swNotifyComplete', s.notifyTripComplete);
+    setSwitch('swNotifyPromo', s.notifyPromo);
+    setSwitch('swNotifyDriver', s.notifyDriverApproved);
+    setSwitch('swTwoFactor', s.twoFactor);
+    setSwitch('swEmergency', s.shareEmergency);
+    setSwitch('swRecord', s.recordAudio);
+    setSwitch('swVerify', s.verifyCustomer);
+  }
+
+  function setSwitch(id, on) {
+    const el = byId(id);
+    if (!el) return;
+    el.classList.toggle('on', !!on);
+  }
+
+  function readSwitch(id, fallback) {
+    const el = byId(id);
+    if (!el) return fallback;
+    return el.classList.contains('on');
   }
 
   function savePricing() {
@@ -1249,12 +1565,52 @@ const App = (() => {
         van: Number(byId('priceVan')?.value) || 1000
       }
     });
-    toast('تم حفظ التسعير', 'success');
+    toast('تم حفظ التسعير في قاعدة البيانات', 'success');
+    recalc();
   }
 
   function saveCommissions() {
+    const welcome = (byId('welcomeCode')?.value || 'WELCOME50').trim().toUpperCase();
     DB.updatePricing({ commission: Number(byId('commissionRate')?.value) || 15 });
-    toast('تم حفظ العمولات', 'success');
+    DB.updateSettings({
+      newUserDiscount: Number(byId('newUserDiscount')?.value) || 30,
+      welcomeCode: welcome
+    });
+    const codes = DB.getPromoCodes();
+    const existing = codes.find((c) => c.code === 'WELCOME50' || c.code === welcome);
+    if (existing) existing.code = welcome;
+    toast('تم حفظ العمولات وكود الترحيب', 'success');
+  }
+
+  function saveServiceArea() {
+    DB.updateSettings({
+      city: 'الناصرية',
+      cities: ['الناصرية'],
+      searchRadiusKm: Number(byId('searchRadius')?.value) || 8,
+      maxWaitMin: Number(byId('maxWait')?.value) || 5
+    });
+    if (byId('coveredCities')) byId('coveredCities').value = 'الناصرية';
+    toast('تم حفظ منطقة الخدمة: الناصرية فقط', 'success');
+  }
+
+  function saveNotificationSettings() {
+    DB.updateSettings({
+      notifyNewRequest: readSwitch('swNotifyRequest', true),
+      notifyTripComplete: readSwitch('swNotifyComplete', true),
+      notifyPromo: readSwitch('swNotifyPromo', false),
+      notifyDriverApproved: readSwitch('swNotifyDriver', true)
+    });
+    toast('تم حفظ إعدادات الإشعارات', 'success');
+  }
+
+  function saveSecuritySettings() {
+    DB.updateSettings({
+      twoFactor: readSwitch('swTwoFactor', true),
+      shareEmergency: readSwitch('swEmergency', true),
+      recordAudio: readSwitch('swRecord', false),
+      verifyCustomer: readSwitch('swVerify', true)
+    });
+    toast('تم حفظ إعدادات الأمان', 'success');
   }
 
   function drawChart(id, config) {
@@ -1266,13 +1622,19 @@ const App = (() => {
   }
 
   function drawAdminCharts() {
+    const rides = DB.getRides();
+    const byType = { economy: 0, comfort: 0, premium: 0, van: 0 };
+    rides.forEach((r) => {
+      const t = DB.normalizeCarType(r.type);
+      if (byType[t] !== undefined) byType[t] += 1;
+    });
     drawChart('revenueChart', {
       type: 'line',
       data: {
         labels: ['سبت', 'أحد', 'إثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة'],
         datasets: [{
           label: 'الإيراد',
-          data: [1.8, 2.1, 1.6, 2.4, 2.2, 2.9, 3.1],
+          data: [0.9, 1.1, 0.8, 1.3, 1.2, 1.6, 1.8],
           borderColor: '#eab308',
           backgroundColor: 'rgba(250,204,21,.2)',
           fill: true,
@@ -1285,7 +1647,7 @@ const App = (() => {
       type: 'doughnut',
       data: {
         labels: ['اقتصادي', 'كومفورت', 'بريميوم', 'عائلي'],
-        datasets: [{ data: [42, 28, 18, 12], backgroundColor: ['#3b82f6', '#facc15', '#a855f7', '#22c55e'] }]
+        datasets: [{ data: [byType.economy, byType.comfort, byType.premium, byType.van], backgroundColor: ['#3b82f6', '#facc15', '#a855f7', '#22c55e'] }]
       },
       options: { plugins: { legend: { position: 'bottom' } } }
     });
@@ -1296,7 +1658,7 @@ const App = (() => {
       type: 'bar',
       data: {
         labels: ['سبت', 'أحد', 'إثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة'],
-        datasets: [{ label: 'د.ع', data: [38, 42, 35, 50, 44, 55, 56], backgroundColor: '#22c55e' }]
+        datasets: [{ label: 'د.ع', data: [28, 32, 25, 40, 34, 45, 48], backgroundColor: '#22c55e' }]
       },
       options: { plugins: { legend: { display: false } } }
     });
@@ -1330,7 +1692,7 @@ const App = (() => {
       renderSavedPlaces();
       renderCustomerTrips();
       renderWallet();
-      renderBaghdadPlaces();
+      renderCityPlaces();
       Maps.initCustomerMap?.();
       if (state.ride) fillTripScreen();
     } else if (session.role === 'driver') {
@@ -1353,7 +1715,7 @@ const App = (() => {
     if (tabId === 'custBook') {
       Maps.initBookingMap?.();
       Maps.invalidateSize('bookingMap');
-      renderBaghdadPlaces();
+      renderCityPlaces();
       updatePickHint();
       renderFare();
     }
@@ -1361,6 +1723,7 @@ const App = (() => {
       Maps.initTrackingMap?.();
       Maps.invalidateSize('trackingMap');
       fillTripScreen();
+      if (state.ride && state.ride.status === 'active') startLiveTracking();
     }
     if (tabId === 'custTrips') renderCustomerTrips(document.querySelector('#custTrips .ft-tab.active')?.dataset.filter || 'all');
     if (tabId === 'custWallet') renderWallet();
@@ -1380,24 +1743,41 @@ const App = (() => {
     if (tabId === 'adminDrivers') renderAdminDrivers(document.querySelector('#adminDrivers .ft-tab.active')?.dataset.filter || 'pending');
   }
 
+  async function captureRegisterDoc(kind, input, box) {
+    const file = input?.files?.[0];
+    if (!file) return;
+    if (file.size > 4 * 1024 * 1024) return toast('حجم الملف أكبر من 4 ميغابايت', 'error');
+    const data = await readFileAsDataUrl(file);
+    state.pendingDocs[kind] = { name: file.name, mime: file.type, size: file.size, data, uploaded: true };
+    box?.classList.add('uploaded');
+    const small = box?.querySelector('small');
+    if (small) small.textContent = file.name;
+    toast(`تم تجهيز ${DOC_LABELS[kind] || kind}`, 'success');
+  }
+
+  function takePendingDocs() {
+    const docs = state.pendingDocs;
+    state.pendingDocs = {};
+    return docs;
+  }
+
   function bindEvents() {
     if (state.bound) return;
     state.bound = true;
 
     all('#vehicleTypes .vehicle-card').forEach((card) => {
-      card.addEventListener('click', () => selectVehicle(card.dataset.type, card));
+      card.addEventListener('click', (e) => {
+        e.preventDefault();
+        selectVehicle(card.dataset.type, card);
+      });
     });
 
     byId('paymentMethod')?.addEventListener('change', (e) => {
       state.payment = e.target.value;
     });
 
-    byId('bookFrom')?.addEventListener('input', (e) => {
-      typeSearch('from', e.target.value);
-    });
-    byId('bookTo')?.addEventListener('input', (e) => {
-      typeSearch('to', e.target.value);
-    });
+    byId('bookFrom')?.addEventListener('input', (e) => typeSearch('from', e.target.value));
+    byId('bookTo')?.addEventListener('input', (e) => typeSearch('to', e.target.value));
     byId('bookFrom')?.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
@@ -1466,8 +1846,7 @@ const App = (() => {
     });
 
     byId('destSearch')?.addEventListener('input', (e) => {
-      const q = e.target.value;
-      const results = Maps.localSearch(q);
+      const results = Maps.localSearch(e.target.value);
       const list = byId('destPickerList');
       if (!list) return;
       list.innerHTML = results.map((p) => `
@@ -1511,15 +1890,31 @@ const App = (() => {
     Maps.on?.('homeclick', (payload) => {
       startBookingTo(payload.lat, payload.lng, payload.label);
     });
+    Maps.on?.('outside', () => rejectOutside());
     Maps.on?.('reset', () => updatePickHint());
+    Maps.on?.('track', (info) => {
+      if (byId('tripETA')) byId('tripETA').textContent = formatMin(info.remainMin);
+      if (info.phase === 'to_pickup') setTripStep(1);
+      if (info.phase === 'to_dest') setTripStep(2);
+    });
+    Maps.on?.('arrived_pickup', () => {
+      state.trackPhase = 'to_dest';
+      setTripStep(2);
+      toast('السائق وصل لموقعك، بدأت الرحلة', 'success');
+    });
+    Maps.on?.('arrived_dest', () => {
+      setTripStep(3);
+      completeCustomerTrip();
+    });
 
     bindRatingStars();
   }
 
   function init() {
     bindEvents();
-    renderBaghdadPlaces();
+    renderCityPlaces();
     updatePickHint();
+    renderFare();
     const session = currentSession();
     if (session) onEnterDashboard(session);
   }
@@ -1554,8 +1949,12 @@ const App = (() => {
     completeTrip,
     requestWithdrawal,
     editVehicle,
+    saveVehicle,
     savePricing,
     saveCommissions,
+    saveServiceArea,
+    saveNotificationSettings,
+    saveSecuritySettings,
     submitRating,
     selectTip,
     addTag,
@@ -1563,7 +1962,17 @@ const App = (() => {
     startBookingTo,
     clearBooking,
     openModal,
-    closeModal
+    closeModal,
+    selectVehicle,
+    openEditProfile,
+    saveProfile,
+    openPaymentMethods,
+    openDriverDocs,
+    openBankAccount,
+    saveBankAccount,
+    captureRegisterDoc,
+    takePendingDocs,
+    viewDocument
   };
 })();
 
@@ -1596,9 +2005,20 @@ Object.assign(window, {
   completeTrip: () => App.completeTrip(),
   requestWithdrawal: () => App.requestWithdrawal(),
   editVehicle: () => App.editVehicle(),
+  saveVehicle: () => App.saveVehicle(),
   savePricing: () => App.savePricing(),
   saveCommissions: () => App.saveCommissions(),
+  saveServiceArea: () => App.saveServiceArea(),
+  saveNotificationSettings: () => App.saveNotificationSettings(),
+  saveSecuritySettings: () => App.saveSecuritySettings(),
   submitRating: () => App.submitRating(),
   selectTip: (btn, amount) => App.selectTip(btn, amount),
-  addTag: (btn) => App.addTag(btn)
+  addTag: (btn) => App.addTag(btn),
+  selectVehicle: (type, card) => App.selectVehicle(type, card),
+  openEditProfile: () => App.openEditProfile(),
+  saveProfile: () => App.saveProfile(),
+  openPaymentMethods: () => App.openPaymentMethods(),
+  openDriverDocs: () => App.openDriverDocs(),
+  openBankAccount: () => App.openBankAccount(),
+  saveBankAccount: () => App.saveBankAccount()
 });

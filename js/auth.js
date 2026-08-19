@@ -1,14 +1,11 @@
 /**
- * نظام المصادقة وإدارة الحسابات
- * Authentication System
+ * نظام المصادقة وإدارة الحسابات — الناصرية
  */
-
 const Auth = (() => {
   const SESSION_KEY = 'dijla_taxi_session';
 
   let currentSession = null;
 
-  // تحميل الجلسة الحالية
   function loadSession() {
     try {
       const stored = localStorage.getItem(SESSION_KEY);
@@ -85,21 +82,33 @@ const Auth = (() => {
         password: data.password
       });
 
-      // إشعار ترحيب
       DB.addNotification({
         userId: newUser.id,
         userType: 'customer',
-        title: 'أهلاً بك في تكسي دجلة! 🎉',
+        title: 'أهلاً بك في تكسي دجلة الناصرية! 🎉',
         message: 'احصل على خصم 50% لأول 3 رحلات باستخدام كود WELCOME50',
         type: 'system'
       });
 
       return { success: true, user: newUser };
-    } else if (role === 'driver') {
+    }
+
+    if (role === 'driver') {
       const existing = DB.findDriverByEmail(data.email);
       if (existing) {
         return { success: false, message: 'البريد الإلكتروني مستخدم بالفعل' };
       }
+      if (!data.carModel || !data.plate || !data.license) {
+        return { success: false, message: 'أكمل بيانات السيارة والرخصة' };
+      }
+
+      const docs = data.documents || {};
+      const uploadedCount = ['id', 'license', 'ownership', 'insurance']
+        .filter((k) => docs[k]?.uploaded || docs[k] === true).length;
+      if (uploadedCount < 2) {
+        return { success: false, message: 'ارفع على الأقل هويتك ورخصة القيادة' };
+      }
+
       const newDriver = DB.addDriver({
         firstName: data.firstName,
         lastName: data.lastName,
@@ -110,21 +119,36 @@ const Auth = (() => {
         carModel: data.carModel,
         plate: data.plate,
         license: data.license,
-        color: 'أبيض'
+        color: data.color || 'أبيض',
+        location: { lat: 31.0452, lng: 46.2561, area: 'مركز الناصرية' },
+        documents: {
+          id: docs.id || { uploaded: false },
+          license: docs.license || { uploaded: false },
+          ownership: docs.ownership || { uploaded: false },
+          insurance: docs.insurance || { uploaded: false }
+        }
+      });
+
+      ['id', 'license', 'ownership', 'insurance'].forEach((kind) => {
+        const file = docs[kind];
+        if (file?.data) {
+          DB.saveDriverDocument(newDriver.id, kind, file);
+        }
       });
 
       DB.addNotification({
         userId: 999,
         userType: 'admin',
         title: 'سائق جديد بانتظار الموافقة',
-        message: `${data.firstName} ${data.lastName} يطلب الانضمام كسائق`,
+        message: `${data.firstName} ${data.lastName} يطلب الانضمام كسائق في الناصرية`,
         type: 'driver_request'
       });
 
       return {
         success: true,
         message: 'تم إرسال طلبك! سيتم مراجعته خلال 24 ساعة',
-        pending: true
+        pending: true,
+        user: newDriver
       };
     }
 

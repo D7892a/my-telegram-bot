@@ -1,6 +1,5 @@
 /**
- * النواة العامة لتطبيق تكسي دجلة
- * تتولى فتح التطبيق، التنقل، والمصادقة الأساسية.
+ * النواة العامة لتطبيق تكسي دجلة — الناصرية
  */
 (() => {
   'use strict';
@@ -86,8 +85,6 @@
       fillText('custRating', user.rating);
       fillText('custTrips', `${user.trips || 0} رحلة`);
       fillText('totalTripsCount', user.trips || 0);
-      const balance = `${Number(user.wallet || 0).toLocaleString('en-US')} د.ع`;
-      fillText('quickBalance', balance);
       showPage('customerApp');
       window.setTimeout(() => {
         if (window.L && window.Maps) Maps.initCustomerMap?.();
@@ -108,7 +105,7 @@
     }
   }
 
-  function handleAuthResult(result, role) {
+  function handleAuthResult(result) {
     if (!result?.success) {
       toast(result?.message || 'تعذر تسجيل الدخول', 'error');
       return;
@@ -123,6 +120,7 @@
   }
 
   function logout() {
+    window.Maps?.stopTracking?.();
     window.Auth?.logout();
     showPage('landingPage');
     toast('تم تسجيل الخروج', 'success');
@@ -135,7 +133,7 @@
     window.clearTimeout(toastTimer);
     element.textContent = message;
     element.className = `toast show ${type}`;
-    toastTimer = window.setTimeout(() => element.classList.remove('show'), 3000);
+    toastTimer = window.setTimeout(() => element.classList.remove('show'), 3200);
   }
 
   function switchDashboardTab(tabId, sourceButton) {
@@ -174,7 +172,7 @@
     if (list && session && window.DB) {
       const notifications = DB.getUserNotifications(session.userId, session.role);
       list.innerHTML = notifications.length
-        ? notifications.map((item) => `<div class="notification-item"><strong>${item.title}</strong><p>${item.message}</p></div>`).join('')
+        ? notifications.map((item) => `<div class="notification-item ${item.read ? '' : 'unread'}"><strong>${item.title}</strong><p>${item.message}</p></div>`).join('')
         : '<p class="muted">لا توجد إشعارات حالياً</p>';
       DB.markAllNotificationsRead(session.userId, session.role);
     }
@@ -189,17 +187,50 @@
     try { localStorage.setItem('dijla_theme', root.dataset.theme); } catch (_) {}
   }
 
-  function mockUpload(box, label) {
-    box.classList.add('uploaded');
-    const small = box.querySelector('small');
-    if (small) small.textContent = 'تم الرفع ✓';
-    toast(`تم رفع ${label}`, 'success');
+  async function mockUpload(box, label) {
+    const kindMap = {
+      'هوية الأحوال المدنية': 'id',
+      'هوية الأحوال': 'id',
+      'رخصة القيادة': 'license',
+      'إسناد السيارة': 'ownership',
+      'التأمين': 'insurance',
+      'بوليصة التأمين': 'insurance'
+    };
+    const kind = box?.dataset?.doc || kindMap[label] || 'id';
+    let input = box.querySelector('input[type="file"]');
+    if (!input) {
+      input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*,.pdf';
+      input.hidden = true;
+      box.appendChild(input);
+    }
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      await window.App?.captureRegisterDoc?.(kind, input, box);
+    };
+    input.click();
   }
 
   function submitContact(event) {
     event?.preventDefault();
-    event?.target?.reset();
-    toast('تم إرسال رسالتك، سنتواصل معك قريباً', 'success');
+    const form = event?.target;
+    const name = form?.querySelector('input[type="text"]')?.value?.trim();
+    const email = form?.querySelector('input[type="email"]')?.value?.trim();
+    const subject = form?.querySelector('select')?.value;
+    const message = form?.querySelector('textarea')?.value?.trim();
+    if (window.DB?.addTicket) {
+      DB.addTicket({
+        name: name || 'زائر',
+        email: email || '',
+        subject: subject || 'استفسار',
+        message: message || '',
+        city: 'الناصرية'
+      });
+    }
+    form?.reset();
+    toast('تم حفظ رسالتك في قاعدة البيانات، سنتواصل معك قريباً', 'success');
   }
 
   function bindEvents() {
@@ -217,7 +248,6 @@
       event.preventDefault();
       const email = byId('loginEmail')?.value.trim();
       const password = byId('loginPassword')?.value;
-      // استنتاج الدور من البريد للحفاظ على نموذج دخول بسيط.
       const role = email === 'admin@dijla.iq' ? 'admin' :
         window.DB?.findDriverByEmail(email) ? 'driver' : 'customer';
       handleAuthResult(Auth.login(email, password, role), role);
@@ -226,6 +256,7 @@
     byId('registerForm')?.addEventListener('submit', (event) => {
       event.preventDefault();
       const role = byId('registerRole')?.value || 'customer';
+      const docs = window.App?.takePendingDocs?.() || {};
       const result = Auth.register({
         firstName: byId('regFirstName')?.value.trim(),
         lastName: byId('regLastName')?.value.trim(),
@@ -235,18 +266,32 @@
         carType: byId('regCarType')?.value,
         carModel: byId('regCarModel')?.value.trim(),
         plate: byId('regPlate')?.value.trim(),
-        license: byId('regLicense')?.value.trim()
+        license: byId('regLicense')?.value.trim(),
+        documents: docs
       }, role);
 
       if (!result.success) return toast(result.message, 'error');
-      if (result.pending) {
-        toast(result.message, 'success');
-        selectAuthTab('login');
-      } else {
-        toast('تم إنشاء الحساب، يمكنك تسجيل الدخول الآن', 'success');
-        selectAuthTab('login');
-      }
+      toast(result.pending ? result.message : 'تم إنشاء الحساب، يمكنك تسجيل الدخول الآن', 'success');
+      selectAuthTab('login');
       event.target.reset();
+      all('#driverFields .upload-box').forEach((box) => {
+        box.classList.remove('uploaded');
+        const small = box.querySelector('small');
+        if (small) small.textContent = 'اضغط لرفع';
+      });
+    });
+
+    all('#driverFields .upload-box').forEach((box) => {
+      const kind = box.dataset.doc;
+      const input = box.querySelector('input[type="file"]');
+      if (!input) return;
+      box.addEventListener('click', (e) => {
+        if (e.target === input) return;
+        input.click();
+      });
+      input.addEventListener('change', () => {
+        window.App?.captureRegisterDoc?.(kind, input, box);
+      });
     });
   }
 
@@ -257,6 +302,7 @@
     } catch (_) {}
 
     bindEvents();
+    window.App?.init?.();
     revealApp();
 
     const session = window.Auth?.getSession();
@@ -272,7 +318,5 @@
     openWallet: () => switchDashboardTab('custWallet')
   });
 
-  // الملف محمّل في نهاية body، لذلك عناصر الواجهة متوفرة ويمكن فتحها فوراً
-  // بدون انتظار مكتبات الخرائط الخارجية.
   init();
 })();

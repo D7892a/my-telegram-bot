@@ -1575,7 +1575,7 @@ input, select, textarea { font-family: inherit; }
   flex-shrink: 0;
 }
 
-.addr-input-wrap { flex: 1; }
+.addr-input-wrap { flex: 1; position: relative; }
 .addr-input-wrap label { display: block; font-size: 12px; font-weight: 700; color: var(--text-light); margin-bottom: 4px; }
 .addr-input-wrap input {
   width: 100%;
@@ -1631,6 +1631,10 @@ input, select, textarea { font-family: inherit; }
   background: var(--primary-light);
   box-shadow: 0 0 0 3px rgba(250, 204, 21, .2);
 }
+
+.vehicle-card.unavailable { opacity: .72; }
+.v-avail { display: block; font-size: 11px; color: var(--success); font-weight: 700; }
+.vehicle-card.unavailable .v-avail { color: var(--danger); }
 
 .v-icon {
   width: 56px;
@@ -3345,6 +3349,26 @@ input, select, textarea { font-family: inherit; }
   .asc-icon { width: 44px; height: 44px; font-size: 20px; }
   .asc-info h3 { font-size: 18px; }
 }
+
+.suggest-box {
+  position: absolute;
+  z-index: 20;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-lg);
+  width: 100%;
+  max-height: 220px;
+  overflow: auto;
+  margin-top: 4px;
+}
+
+.suggest-item, .dest-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
   text-align: right;
   border-bottom: 1px solid var(--border);
   background: transparent;
@@ -3536,6 +3560,14 @@ input, select, textarea { font-family: inherit; }
 @media (max-width: 480px) {
   .hero-stats { gap: 20px; }
   .hero-stats strong { font-size: 20px; }
+  .section-head h2 { font-size: 24px; }
+  .trip-status-bar { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .trip-step:nth-child(2)::before, .trip-step:nth-child(4)::before { display: none; }
+  .admin-stat-card { padding: 14px; }
+  .asc-icon { width: 44px; height: 44px; font-size: 20px; }
+  .asc-info h3 { font-size: 18px; }
+}
+ong { font-size: 20px; }
   .section-head h2 { font-size: 24px; }
   .trip-status-bar { grid-template-columns: repeat(2, 1fr); gap: 16px; }
   .trip-step:nth-child(2)::before, .trip-step:nth-child(4)::before { display: none; }

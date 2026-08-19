@@ -1,161 +1,234 @@
 /**
- * طبقة قاعدة البيانات
- * Database Layer
- * يستخدم localStorage كقاعدة بيانات دائمة
- * Provides persistent data storage with full CRUD operations
+ * قاعدة بيانات تكسي دجلة — الناصرية
+ * طبقة بيانات حقيقية: مخطط مُصدَّر، ترحيل، تخزين دائم، مستمسكات، إعدادات
  */
-
 const DB = (() => {
-  const STORAGE_KEY = 'dijla_taxi_db_v1';
+  'use strict';
 
-  // البيانات الأولية
+  const STORAGE_KEY = 'dijla_taxi_db_v2_nasiriyah';
+  const LEGACY_KEYS = ['dijla_taxi_db_v1', 'dijla_taxi_db'];
+  const FILES_DB = 'dijla_files_v2';
+  const SCHEMA_VERSION = 2;
+
+  const CITY = {
+    name: 'الناصرية',
+    nameEn: 'Nasiriyah',
+    governorate: 'ذي قار',
+    center: [31.0452, 46.2561],
+    bounds: { north: 31.125, south: 30.935, east: 46.355, west: 46.075 }
+  };
+
+  function nowIso() {
+    return new Date().toISOString();
+  }
+
+  function stamp() {
+    return nowIso().replace('T', ' ').slice(0, 16);
+  }
+
   const initialData = {
+    version: SCHEMA_VERSION,
+    city: CITY.name,
     users: {
       customers: [
         {
           id: 1, firstName: 'أحمد', lastName: 'محمد',
           email: 'ahmed@dijla.iq', password: '123456',
           phone: '0770 123 4567', rating: 4.9, wallet: 25000,
-          createdAt: '2024-01-15', trips: 45,
+          createdAt: '2025-11-15', trips: 18,
+          language: 'ar', notifications: true,
           addresses: [
-            { id: 1, name: 'البيت', address: 'الكرادة، شارع 62، بناية 15', coords: [33.3152, 44.3661] },
-            { id: 2, name: 'العمل', address: 'المنصور، مجاور مول المنصور', coords: [33.3128, 44.3467] },
-            { id: 3, name: 'المول', address: 'بغداد مول، الجادرية', coords: [33.2915, 44.3809] },
-            { id: 4, name: 'المطار', address: 'مطار بغداد الدولي', coords: [33.2625, 44.2346] }
+            { id: 1, name: 'البيت', address: 'الحبوبي، قرب جامع الحبوبي', coords: [31.0461, 46.2525] },
+            { id: 2, name: 'العمل', address: 'الصالحية، شارع المركز', coords: [31.0520, 46.2642] },
+            { id: 3, name: 'الجامعة', address: 'جامعة ذي قار', coords: [31.0320, 46.2380] },
+            { id: 4, name: 'السوق', address: 'السوق الكبير، الناصرية', coords: [31.0440, 46.2580] }
           ]
         },
         {
           id: 2, firstName: 'سارة', lastName: 'علي',
           email: 'sara@dijla.iq', password: '123456',
           phone: '0790 234 5678', rating: 4.8, wallet: 18000,
-          createdAt: '2024-02-20', trips: 32
+          createdAt: '2025-12-20', trips: 11, language: 'ar', notifications: true,
+          addresses: [
+            { id: 1, name: 'البيت', address: 'حي الشموخ', coords: [31.0680, 46.2780] }
+          ]
+        },
+        {
+          id: 3, firstName: 'حسين', lastName: 'جاسم',
+          email: 'hussein@dijla.iq', password: '123456',
+          phone: '0780 345 6789', rating: 4.7, wallet: 9000,
+          createdAt: '2026-01-08', trips: 6, language: 'ar', notifications: true, addresses: []
         }
       ],
       drivers: [
         {
           id: 101, firstName: 'كريم', lastName: 'عبدالله',
           email: 'karim@dijla.iq', password: '123456',
-          phone: '0790 111 2233', carType: 'sedan',
-          carModel: 'تويوتا كامري 2022', plate: '12-345-أ ب',
+          phone: '0790 111 2233', carType: 'comfort',
+          carModel: 'تويوتا كامري 2022', plate: '12-345-ذ ق',
           license: 'IQ-2023-001', color: 'أبيض',
           rating: 4.9, status: 'approved', online: true,
-          createdAt: '2023-06-15', trips: 1250, earnings: 2500000,
-          location: { lat: 33.3128, lng: 44.3467 },
-          documents: { id: true, license: true, insurance: true }
+          createdAt: '2025-06-15', trips: 420, earnings: 1850000,
+          location: { lat: 31.0520, lng: 46.2642, area: 'الصالحية' },
+          bank: { name: 'مصرف الرشيد', account: '0045-778899' },
+          documents: {
+            id: { uploaded: true, name: 'هوية-كريم.jpg', mime: 'image/jpeg', uploadedAt: '2025-06-15' },
+            license: { uploaded: true, name: 'رخصة-كريم.jpg', mime: 'image/jpeg', uploadedAt: '2025-06-15' },
+            ownership: { uploaded: true, name: 'إسناد-كامري.pdf', mime: 'application/pdf', uploadedAt: '2025-06-15' },
+            insurance: { uploaded: true, name: 'تأمين-كريم.jpg', mime: 'image/jpeg', uploadedAt: '2025-06-15' }
+          }
         },
         {
           id: 102, firstName: 'محمد', lastName: 'علي',
           email: 'mohammed@dijla.iq', password: '123456',
           phone: '0770 222 3344', carType: 'premium',
-          carModel: 'مرسيدس C-Class 2023', plate: '15-678-ب ج',
+          carModel: 'مرسيدس C-Class 2023', plate: '15-678-ذ ق',
           license: 'IQ-2023-002', color: 'أسود',
           rating: 4.9, status: 'approved', online: true,
-          createdAt: '2023-07-20', trips: 980, earnings: 1800000,
-          location: { lat: 33.3152, lng: 44.3661 },
-          documents: { id: true, license: true, insurance: true }
+          createdAt: '2025-07-20', trips: 310, earnings: 2100000,
+          location: { lat: 31.0461, lng: 46.2525, area: 'الحبوبي' },
+          bank: { name: 'مصرف الرافدين', account: '1122-334455' },
+          documents: {
+            id: { uploaded: true, name: 'هوية-محمد.jpg', mime: 'image/jpeg', uploadedAt: '2025-07-20' },
+            license: { uploaded: true, name: 'رخصة-محمد.jpg', mime: 'image/jpeg', uploadedAt: '2025-07-20' },
+            ownership: { uploaded: true, name: 'إسناد-مرسيدس.pdf', mime: 'application/pdf', uploadedAt: '2025-07-20' },
+            insurance: { uploaded: true, name: 'تأمين-محمد.jpg', mime: 'image/jpeg', uploadedAt: '2025-07-20' }
+          }
         },
         {
           id: 103, firstName: 'علي', lastName: 'حسين',
           email: 'ali.h@dijla.iq', password: '123456',
           phone: '0780 333 4455', carType: 'van',
-          carModel: 'هيونداي H1 2021', plate: '20-111-ج د',
+          carModel: 'هيونداي H1 2021', plate: '20-111-ذ ق',
           license: 'IQ-2023-003', color: 'فضي',
-          rating: 4.7, status: 'approved', online: false,
-          createdAt: '2023-08-10', trips: 450, earnings: 850000,
-          location: { lat: 33.2915, lng: 44.3809 },
-          documents: { id: true, license: true, insurance: true }
+          rating: 4.7, status: 'approved', online: true,
+          createdAt: '2025-08-10', trips: 190, earnings: 980000,
+          location: { lat: 31.0680, lng: 46.2780, area: 'الشموخ' },
+          bank: { name: 'مصرف العراق', account: '7788-001122' },
+          documents: {
+            id: { uploaded: true, name: 'هوية-علي.jpg', mime: 'image/jpeg', uploadedAt: '2025-08-10' },
+            license: { uploaded: true, name: 'رخصة-علي.jpg', mime: 'image/jpeg', uploadedAt: '2025-08-10' },
+            ownership: { uploaded: true, name: 'إسناد-H1.pdf', mime: 'application/pdf', uploadedAt: '2025-08-10' },
+            insurance: { uploaded: true, name: 'تأمين-علي.jpg', mime: 'image/jpeg', uploadedAt: '2025-08-10' }
+          }
+        },
+        {
+          id: 104, firstName: 'سامي', lastName: 'نوري',
+          email: 'sami@dijla.iq', password: '123456',
+          phone: '0771 444 5566', carType: 'economy',
+          carModel: 'كيا ريو 2021', plate: '22-909-ذ ق',
+          license: 'IQ-2024-011', color: 'أبيض',
+          rating: 4.6, status: 'approved', online: true,
+          createdAt: '2025-09-01', trips: 260, earnings: 720000,
+          location: { lat: 31.0320, lng: 46.2380, area: 'جامعة ذي قار' },
+          bank: { name: 'زين كاش', account: '07714445566' },
+          documents: {
+            id: { uploaded: true, name: 'هوية-سامي.jpg', mime: 'image/jpeg', uploadedAt: '2025-09-01' },
+            license: { uploaded: true, name: 'رخصة-سامي.jpg', mime: 'image/jpeg', uploadedAt: '2025-09-01' },
+            ownership: { uploaded: true, name: 'إسناد-ريو.pdf', mime: 'application/pdf', uploadedAt: '2025-09-01' },
+            insurance: { uploaded: true, name: 'تأمين-سامي.jpg', mime: 'image/jpeg', uploadedAt: '2025-09-01' }
+          }
+        },
+        {
+          id: 105, firstName: 'ياسر', lastName: 'عباس',
+          email: 'yasser@dijla.iq', password: '123456',
+          phone: '0782 555 6677', carType: 'economy',
+          carModel: 'هيونداي أكسنت 2020', plate: '18-220-ذ ق',
+          license: 'IQ-2024-012', color: 'رمادي',
+          rating: 4.5, status: 'approved', online: true,
+          createdAt: '2025-10-12', trips: 140, earnings: 410000,
+          location: { lat: 31.0750, lng: 46.2350, area: 'الإسكان' },
+          bank: { name: 'آسيا حوالة', account: '07825556677' },
+          documents: {
+            id: { uploaded: true, name: 'هوية-ياسر.jpg', mime: 'image/jpeg', uploadedAt: '2025-10-12' },
+            license: { uploaded: true, name: 'رخصة-ياسر.jpg', mime: 'image/jpeg', uploadedAt: '2025-10-12' },
+            ownership: { uploaded: true, name: 'إسناد-أكسنت.pdf', mime: 'application/pdf', uploadedAt: '2025-10-12' },
+            insurance: { uploaded: true, name: 'تأمين-ياسر.jpg', mime: 'image/jpeg', uploadedAt: '2025-10-12' }
+          }
+        },
+        {
+          id: 106, firstName: 'فلاح', lastName: 'حسن',
+          email: 'falah@dijla.iq', password: '123456',
+          phone: '0793 666 7788', carType: 'premium',
+          carModel: 'لكزس ES 2022', plate: '30-001-ذ ق',
+          license: 'IQ-2024-013', color: 'أسود',
+          rating: 4.8, status: 'approved', online: false,
+          createdAt: '2025-11-03', trips: 88, earnings: 640000,
+          location: { lat: 31.0410, lng: 46.2500, area: 'الكورنيش' },
+          bank: { name: 'مصرف الرشيد', account: '9900-112233' },
+          documents: {
+            id: { uploaded: true, name: 'هوية-فلاح.jpg', mime: 'image/jpeg', uploadedAt: '2025-11-03' },
+            license: { uploaded: true, name: 'رخصة-فلاح.jpg', mime: 'image/jpeg', uploadedAt: '2025-11-03' },
+            ownership: { uploaded: true, name: 'إسناد-لكزس.pdf', mime: 'application/pdf', uploadedAt: '2025-11-03' },
+            insurance: { uploaded: true, name: 'تأمين-فلاح.jpg', mime: 'image/jpeg', uploadedAt: '2025-11-03' }
+          }
         },
         {
           id: 201, firstName: 'حيدر', lastName: 'كاظم',
           email: 'haider@dijla.iq', password: '123456',
-          phone: '0790 555 6677', carType: 'sedan',
-          carModel: 'كيا سيراتو 2023', plate: '25-333-هـ و',
-          license: 'IQ-2024-005', color: 'أحمر',
-          rating: 4.9, status: 'pending', online: false,
-          createdAt: '2024-05-15', trips: 0, earnings: 0,
-          documents: { id: true, license: true, insurance: true }
+          phone: '0790 555 6677', carType: 'economy',
+          carModel: 'كيا سيراتو 2023', plate: '25-333-ذ ق',
+          license: 'IQ-2026-005', color: 'أحمر',
+          rating: 5, status: 'pending', online: false,
+          createdAt: '2026-08-10', trips: 0, earnings: 0,
+          location: { lat: 31.0440, lng: 46.2580, area: 'السوق الكبير' },
+          bank: {},
+          documents: {
+            id: { uploaded: true, name: 'هوية-حيدر.jpg', mime: 'image/jpeg', uploadedAt: '2026-08-10' },
+            license: { uploaded: true, name: 'رخصة-حيدر.jpg', mime: 'image/jpeg', uploadedAt: '2026-08-10' },
+            ownership: { uploaded: true, name: 'إسناد-سيراتو.pdf', mime: 'application/pdf', uploadedAt: '2026-08-10' },
+            insurance: { uploaded: true, name: 'تأمين-حيدر.jpg', mime: 'image/jpeg', uploadedAt: '2026-08-10' }
+          }
         },
         {
           id: 202, firstName: 'مصطفى', lastName: 'رحيم',
           email: 'mustafa@dijla.iq', password: '123456',
           phone: '0770 666 7788', carType: 'premium',
-          carModel: 'بي ام دبليو 5 2022', plate: '30-444-و ز',
-          license: 'IQ-2024-006', color: 'أزرق غامق',
-          rating: 4.8, status: 'pending', online: false,
-          createdAt: '2024-05-16', trips: 0, earnings: 0,
-          documents: { id: true, license: true, insurance: false }
+          carModel: 'بي ام دبليو 5 2022', plate: '30-444-ذ ق',
+          license: 'IQ-2026-006', color: 'أزرق غامق',
+          rating: 5, status: 'pending', online: false,
+          createdAt: '2026-08-12', trips: 0, earnings: 0,
+          location: { lat: 31.0580, lng: 46.2700, area: 'حي المعلمين' },
+          bank: {},
+          documents: {
+            id: { uploaded: true, name: 'هوية-مصطفى.jpg', mime: 'image/jpeg', uploadedAt: '2026-08-12' },
+            license: { uploaded: true, name: 'رخصة-مصطفى.jpg', mime: 'image/jpeg', uploadedAt: '2026-08-12' },
+            ownership: { uploaded: false },
+            insurance: { uploaded: false }
+          }
         },
         {
           id: 203, firstName: 'عباس', lastName: 'جاسم',
           email: 'abbas@dijla.iq', password: '123456',
           phone: '0780 777 8899', carType: 'van',
-          carModel: 'تويوتا هايس 2021', plate: '35-555-ز ح',
-          license: 'IQ-2024-007', color: 'أبيض',
-          rating: 4.5, status: 'pending', online: false,
-          createdAt: '2024-05-17', trips: 0, earnings: 0,
-          documents: { id: false, license: true, insurance: true }
-        },
-        {
-          id: 204, firstName: 'علي', lastName: 'كاظم',
-          email: 'ali.k@dijla.iq', password: '123456',
-          phone: '0790 888 9900', carType: 'sedan',
-          carModel: 'هيونداي أكسنت 2022', plate: '10-222-د',
-          license: 'IQ-2024-004', color: 'رمادي',
-          rating: 4.6, status: 'pending', online: false,
-          createdAt: '2024-05-18', trips: 0, earnings: 0,
-          documents: { id: true, license: false, insurance: true }
-        },
-        {
-          id: 205, firstName: 'حسن', lastName: 'علي',
-          email: 'hassan.a@dijla.iq', password: '123456',
-          phone: '0770 999 0011', carType: 'comfort',
-          carModel: 'تويوتا كورولا 2023', plate: '40-666-ح ط',
-          license: 'IQ-2024-008', color: 'أبيض',
-          rating: 4.7, status: 'pending', online: false,
-          createdAt: '2024-05-19', trips: 0, earnings: 0,
-          documents: { id: true, license: true, insurance: true }
-        },
-        {
-          id: 206, firstName: 'يوسف', lastName: 'طالب',
-          email: 'yousef@dijla.iq', password: '123456',
-          phone: '0790 111 2233', carType: 'sedan',
-          carModel: 'نيسان صني 2022', plate: '45-777-ط',
-          license: 'IQ-2024-009', color: 'فضي',
-          rating: 4.8, status: 'pending', online: false,
-          createdAt: '2024-05-20', trips: 0, earnings: 0,
-          documents: { id: true, license: true, insurance: true }
-        },
-        {
-          id: 207, firstName: 'أحمد', lastName: 'كاظم',
-          email: 'ahmed.k@dijla.iq', password: '123456',
-          phone: '0770 222 3344', carType: 'premium',
-          carModel: 'لكزس ES 2023', plate: '50-888-ي',
-          license: 'IQ-2024-010', color: 'أسود',
-          rating: 4.9, status: 'pending', online: false,
-          createdAt: '2024-05-20', trips: 0, earnings: 0,
-          documents: { id: true, license: true, insurance: true }
+          carModel: 'تويوتا هايس 2021', plate: '35-555-ذ ق',
+          license: 'IQ-2026-007', color: 'أبيض',
+          rating: 5, status: 'pending', online: false,
+          createdAt: '2026-08-14', trips: 0, earnings: 0,
+          location: { lat: 31.0600, lng: 46.2300, area: 'حي العسكري' },
+          bank: {},
+          documents: {
+            id: { uploaded: false },
+            license: { uploaded: true, name: 'رخصة-عباس.jpg', mime: 'image/jpeg', uploadedAt: '2026-08-14' },
+            ownership: { uploaded: true, name: 'إسناد-هايس.pdf', mime: 'application/pdf', uploadedAt: '2026-08-14' },
+            insurance: { uploaded: true, name: 'تأمين-عباس.jpg', mime: 'image/jpeg', uploadedAt: '2026-08-14' }
+          }
         }
       ],
       admins: [
-        {
-          id: 999, name: 'مدير النظام',
-          email: 'admin@dijla.iq', password: 'admin',
-          role: 'super_admin'
-        }
+        { id: 999, name: 'مدير النظام', email: 'admin@dijla.iq', password: 'admin', role: 'super_admin' }
       ]
     },
-    rides: generateInitialRides(),
+    rides: [],
     transactions: [
-      { id: 1, userId: 1, userType: 'customer', type: 'topup', amount: 50000, method: 'card', description: 'شحن المحفظة', createdAt: '2024-05-15' },
-      { id: 2, userId: 1, userType: 'customer', type: 'payment', amount: -8000, method: 'wallet', description: 'دفع رحلة - الكرادة للمنصور', createdAt: '2024-05-20' },
-      { id: 3, userId: 1, userType: 'customer', type: 'topup', amount: 10000, method: 'cash', description: 'شحن المحفظة', createdAt: '2024-05-18' },
-      { id: 4, userId: 1, userType: 'customer', type: 'payment', amount: -7000, method: 'wallet', description: 'دفع رحلة - المنصور للكرادة', createdAt: '2024-05-15' },
-      { id: 5, userId: 1, userType: 'customer', type: 'gift', amount: 5000, method: 'system', description: 'كوبون ترحيبي', createdAt: '2024-05-10' }
+      { id: 1, userId: 1, userType: 'customer', type: 'topup', amount: 50000, method: 'card', description: 'شحن المحفظة', createdAt: '2026-08-01 10:00' },
+      { id: 2, userId: 1, userType: 'customer', type: 'payment', amount: -6500, method: 'wallet', description: 'دفع رحلة - الحبوبي إلى الصالحية', createdAt: '2026-08-10 14:20' },
+      { id: 3, userId: 1, userType: 'customer', type: 'topup', amount: 10000, method: 'zaincash', description: 'شحن من زين كاش', createdAt: '2026-08-12 09:15' }
     ],
     promoCodes: [
       { code: 'WELCOME50', discount: 50, type: 'percent', maxUses: 3, usedCount: 0, expiresAt: '2026-12-31', active: true },
-      { code: 'WEEKEND20', discount: 20, type: 'percent', maxUses: 100, usedCount: 12, expiresAt: '2026-12-31', active: true },
-      { code: 'WALLET15', discount: 15, type: 'percent', maxUses: 200, usedCount: 45, expiresAt: '2026-12-31', active: true }
+      { code: 'WEEKEND20', discount: 20, type: 'percent', maxUses: 100, usedCount: 8, expiresAt: '2026-12-31', active: true },
+      { code: 'WALLET15', discount: 15, type: 'percent', maxUses: 200, usedCount: 21, expiresAt: '2026-12-31', active: true }
     ],
     pricing: {
       base: 1000,
@@ -164,89 +237,223 @@ const DB = (() => {
       commission: 15,
       surgeMultipliers: { peak: 1.5, night: 1.3 }
     },
+    settings: {
+      city: CITY.name,
+      cities: ['الناصرية'],
+      searchRadiusKm: 8,
+      maxWaitMin: 5,
+      newUserDiscount: 30,
+      welcomeCode: 'WELCOME50',
+      notifyNewRequest: true,
+      notifyTripComplete: true,
+      notifyPromo: false,
+      notifyDriverApproved: true,
+      twoFactor: true,
+      shareEmergency: true,
+      recordAudio: false,
+      verifyCustomer: true,
+      language: 'ar'
+    },
     notifications: [
-      { id: 1, userId: 1, userType: 'customer', title: 'رحلة مكتملة', message: 'تم إنهاء رحلتك بنجاح. قيم تجربتك!', type: 'trip', read: false, createdAt: '2024-05-20 14:30' },
-      { id: 2, userId: 1, userType: 'customer', title: 'كوبون جديد!', message: 'استخدم WELCOME50 للحصول على خصم 50%', type: 'promo', read: false, createdAt: '2024-05-19' },
-      { id: 3, userId: 1, userType: 'customer', title: 'تم شحن المحفظة', message: 'تم إضافة 50,000 د.ع لمحفظتك بنجاح', type: 'wallet', read: true, createdAt: '2024-05-15' }
+      { id: 1, userId: 1, userType: 'customer', title: 'أهلاً بك في الناصرية', message: 'تكسي دجلة يخدم الناصرية فقط حالياً. اطلب رحلتك من أي حي داخل المدينة.', type: 'system', read: false, createdAt: '2026-08-18 09:00' },
+      { id: 2, userId: 1, userType: 'customer', title: 'كوبون ترحيبي', message: 'استخدم WELCOME50 للحصول على خصم 50% لأول رحلاتك', type: 'promo', read: false, createdAt: '2026-08-18 09:01' }
+    ],
+    pendingRequests: [],
+    tickets: [],
+    withdrawals: [
+      { id: 1, driverId: 101, amount: 180000, status: 'paid', createdAt: '2026-08-12' },
+      { id: 2, driverId: 101, amount: 150000, status: 'paid', createdAt: '2026-08-05' }
     ],
     stats: {
-      totalRides: 15420,
-      totalRevenue: 15420000,
-      totalCustomers: 50230,
-      totalDrivers: 3200,
-      pendingDrivers: 7,
-      todayRides: 1847,
-      todayRevenue: 1850000
+      totalRides: 1860,
+      totalRevenue: 2140000,
+      totalCustomers: 840,
+      totalDrivers: 46,
+      pendingDrivers: 3,
+      todayRides: 64,
+      todayRevenue: 78000
     }
   };
 
-  function generateInitialRides() {
-    const rides = [];
+  function generateNasiriyahRides() {
     const routes = [
-      ['الكرادة', 'المنصور', [33.3152, 44.3661], [33.3128, 44.3467]],
-      ['الجادرية', 'الكرادة', [33.2915, 44.3809], [33.3152, 44.3661]],
-      ['الكاظمية', 'الاعظمية', [33.3700, 44.3300], [33.3950, 44.3400]],
-      ['المنصور', 'بغداد الجديدة', [33.3128, 44.3467], [33.3050, 44.4200]],
-      ['الكرادة', 'مطار بغداد', [33.3152, 44.3661], [33.2625, 44.2346]],
-      ['الكرادة', 'الجادرية', [33.3152, 44.3661], [33.2915, 44.3809]],
-      ['المنصور', 'الكرادة', [33.3128, 44.3467], [33.3152, 44.3661]],
-      ['الكرادة', 'مركز المدينة', [33.3152, 44.3661], [33.3400, 44.3950]]
+      ['الحبوبي', 'الصالحية', [31.0461, 46.2525], [31.0520, 46.2642]],
+      ['الشموخ', 'جامعة ذي قار', [31.0680, 46.2780], [31.0320, 46.2380]],
+      ['الإسكان', 'السوق الكبير', [31.0750, 46.2350], [31.0440, 46.2580]],
+      ['الكورنيش', 'حي المعلمين', [31.0410, 46.2500], [31.0580, 46.2700]],
+      ['حي العسكري', 'الحبوبي', [31.0600, 46.2300], [31.0461, 46.2525]],
+      ['سومر', 'المستشفى العام', [31.0280, 46.2680], [31.0480, 46.2450]],
+      ['حي الحسين', 'زقورة أور', [31.0650, 46.2550], [30.9626, 46.1031]],
+      ['شارع بغداد', 'الجمهورية', [31.0620, 46.2650], [31.0380, 46.2480]]
     ];
-    const customers = ['أحمد محمد', 'سارة علي', 'علي حسين', 'مريم خالد', 'حسن عبدالله'];
-    const drivers = ['كريم عبدالله', 'محمد علي', 'سامي نوري', 'يوسف طالب'];
-    const statuses = ['completed', 'completed', 'completed', 'completed', 'completed', 'active', 'cancelled'];
+    const customers = [
+      { id: 1, name: 'أحمد محمد' },
+      { id: 2, name: 'سارة علي' },
+      { id: 3, name: 'حسين جاسم' }
+    ];
+    const drivers = [
+      { id: 101, name: 'كريم عبدالله' },
+      { id: 102, name: 'محمد علي' },
+      { id: 103, name: 'علي حسين' },
+      { id: 104, name: 'سامي نوري' }
+    ];
     const types = ['economy', 'comfort', 'premium', 'van'];
-
-    for (let i = 0; i < 50; i++) {
+    const rides = [];
+    for (let i = 0; i < 28; i++) {
       const route = routes[i % routes.length];
       const customer = customers[i % customers.length];
       const driver = drivers[i % drivers.length];
-      const status = i < 30 ? 'completed' : (i < 35 ? 'active' : 'cancelled');
-      const distance = Math.round((3 + Math.random() * 25) * 10) / 10;
+      const status = i < 22 ? 'completed' : (i < 24 ? 'cancelled' : 'completed');
+      const distance = Math.round((1.4 + (i % 9) * 1.1) * 10) / 10;
       const type = types[i % types.length];
       const multipliers = { economy: 1, comfort: 1.5, premium: 2.5, van: 2 };
       const fare = Math.round((1000 + distance * 500 * multipliers[type]) / 100) * 100;
-      const day = Math.floor(Math.random() * 30) + 1;
+      const day = String((i % 18) + 1).padStart(2, '0');
       rides.push({
-        id: 5000 + i,
-        customerId: (i % 5) + 1,
-        driverId: (i % 4) + 101,
-        customer, driver,
-        from: route[0], to: route[1],
-        fromCoords: route[2], toCoords: route[3],
-        distance, fare, type, status,
-        rating: status === 'completed' ? Math.floor(Math.random() * 2) + 4 : 0,
-        date: `2024-05-${day.toString().padStart(2, '0')} ${(10 + i % 8).toString().padStart(2, '0')}:${(i * 7 % 60).toString().padStart(2, '0')}`
+        id: 7000 + i,
+        customerId: customer.id,
+        driverId: driver.id,
+        customer: customer.name,
+        driver: driver.name,
+        from: route[0],
+        to: route[1],
+        fromCoords: route[2],
+        toCoords: route[3],
+        distance,
+        duration: Math.round(distance * 2.6),
+        fare,
+        type,
+        status,
+        payment: i % 3 === 0 ? 'wallet' : 'cash',
+        rating: status === 'completed' ? 4 + (i % 2) : 0,
+        date: `2026-08-${day} ${(10 + i % 8).toString().padStart(2, '0')}:${(i * 7 % 60).toString().padStart(2, '0')}`
       });
     }
     return rides;
   }
 
-  // تحميل البيانات من localStorage
+  initialData.rides = generateNasiriyahRides();
+
+  function clone(value) {
+    return JSON.parse(JSON.stringify(value));
+  }
+
+  function persist(payload) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    } catch (err) {
+      console.warn('DB persist failed', err);
+    }
+  }
+
+  function looksLikeBaghdad(payload) {
+    const sample = JSON.stringify(payload || {}).slice(0, 4000);
+    return /الكرادة|المنصور|بغداد الجديدة|مطار بغداد/.test(sample);
+  }
+
   function load() {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) return JSON.parse(stored);
-    } catch (e) {
-      console.warn('Failed to load DB:', e);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed && parsed.version === SCHEMA_VERSION && parsed.city === CITY.name && !looksLikeBaghdad(parsed)) {
+          parsed.settings = { ...initialData.settings, ...(parsed.settings || {}) };
+          parsed.pricing = { ...initialData.pricing, ...(parsed.pricing || {}) };
+          parsed.pendingRequests = parsed.pendingRequests || [];
+          parsed.tickets = parsed.tickets || [];
+          parsed.withdrawals = parsed.withdrawals || [];
+          return parsed;
+        }
+      }
+    } catch (err) {
+      console.warn('DB load failed', err);
     }
-    save(initialData);
-    return JSON.parse(JSON.stringify(initialData));
-  }
-
-  function save(data) {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    } catch (e) {
-      console.warn('Failed to save DB:', e);
-    }
+    LEGACY_KEYS.forEach((key) => {
+      try { localStorage.removeItem(key); } catch (_) {}
+    });
+    const fresh = clone(initialData);
+    persist(fresh);
+    return fresh;
   }
 
   let data = load();
 
-  // ============== واجهة قاعدة البيانات العامة ==============
+  function save() {
+    persist(data);
+    return data;
+  }
+
+  function nextId(list, fallback = 1) {
+    const ids = (list || []).map((item) => Number(item.id) || 0);
+    return Math.max(fallback - 1, ...ids, 0) + 1;
+  }
+
+  function normalizeCarType(type) {
+    const map = {
+      sedan: 'economy', economy: 'economy',
+      comfort: 'comfort',
+      premium: 'premium',
+      van: 'van', family: 'van'
+    };
+    return map[String(type || '').toLowerCase()] || 'economy';
+  }
+
+  function hasDoc(doc) {
+    if (!doc) return false;
+    if (doc === true) return true;
+    return !!(doc.uploaded || doc.data || doc.name);
+  }
+
+  /* IndexedDB للمستمسكات الكبيرة */
+  function openFilesDb() {
+    return new Promise((resolve, reject) => {
+      if (!window.indexedDB) return reject(new Error('no idb'));
+      const req = indexedDB.open(FILES_DB, 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains('files')) db.createObjectStore('files');
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async function putFile(key, payload) {
+    try {
+      const db = await openFilesDb();
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction('files', 'readwrite');
+        tx.objectStore('files').put(payload, key);
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error);
+      });
+      db.close();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  async function getFile(key) {
+    try {
+      const db = await openFilesDb();
+      const value = await new Promise((resolve, reject) => {
+        const tx = db.transaction('files', 'readonly');
+        const req = tx.objectStore('files').get(key);
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => reject(req.error);
+      });
+      db.close();
+      return value;
+    } catch (_) {
+      return null;
+    }
+  }
+
   return {
-    // العمليات الأساسية
+    CITY,
+    SCHEMA_VERSION,
+
     get: (path) => {
       const keys = path.split('.');
       let result = data;
@@ -257,152 +464,124 @@ const DB = (() => {
       return result;
     },
 
-    // استعلام عام
-    query: (collection, filterFn) => {
-      return data[collection]?.filter(filterFn) || [];
-    },
-
-    find: (collection, id) => {
-      return data[collection]?.find(item => item.id === id) || null;
-    },
-
-    // إضافة عنصر
-    insert: (collection, item) => {
-      if (!data[collection]) data[collection] = [];
-      const ids = data[collection].map(i => i.id || 0);
-      item.id = item.id || Math.max(...ids, 0) + 1;
-      data[collection].push(item);
-      save(data);
-      return item;
-    },
-
-    // تحديث عنصر
-    update: (collection, id, updates) => {
-      const item = data[collection]?.find(i => i.id === id);
-      if (item) {
-        Object.assign(item, updates);
-        save(data);
-      }
-      return item;
-    },
-
-    // حذف عنصر
-    delete: (collection, id) => {
-      if (data[collection]) {
-        data[collection] = data[collection].filter(i => i.id !== id);
-        save(data);
-      }
-    },
-
-    // المستخدمون
-    findCustomerByEmail: (email) => {
-      return data.users.customers.find(c => c.email.toLowerCase() === email.toLowerCase());
-    },
-    findDriverByEmail: (email) => {
-      return data.users.drivers.find(d => d.email.toLowerCase() === email.toLowerCase());
-    },
-    findAdminByEmail: (email) => {
-      return data.users.admins.find(a => a.email.toLowerCase() === email.toLowerCase());
-    },
-    findCustomerById: (id) => data.users.customers.find(c => c.id === id),
-    findDriverById: (id) => data.users.drivers.find(d => d.id === id),
+    findCustomerByEmail: (email) => data.users.customers.find((c) => c.email.toLowerCase() === String(email).toLowerCase()),
+    findDriverByEmail: (email) => data.users.drivers.find((d) => d.email.toLowerCase() === String(email).toLowerCase()),
+    findAdminByEmail: (email) => data.users.admins.find((a) => a.email.toLowerCase() === String(email).toLowerCase()),
+    findCustomerById: (id) => data.users.customers.find((c) => c.id === id),
+    findDriverById: (id) => data.users.drivers.find((d) => d.id === id),
 
     addCustomer: (customer) => {
-      customer.id = Math.max(...data.users.customers.map(c => c.id || 0), 0) + 1;
-      customer.rating = 5.0;
+      customer.id = nextId(data.users.customers);
+      customer.rating = 5;
       customer.wallet = 5000;
       customer.trips = 0;
-      customer.createdAt = new Date().toISOString().split('T')[0];
-      customer.addresses = [];
+      customer.language = 'ar';
+      customer.notifications = true;
+      customer.createdAt = nowIso().split('T')[0];
+      customer.addresses = customer.addresses || [];
       data.users.customers.push(customer);
-      save(data);
+      save();
       return customer;
     },
 
     addDriver: (driver) => {
-      driver.id = Math.max(...data.users.drivers.map(d => d.id || 0), 0) + 1;
-      driver.rating = 5.0;
+      driver.id = nextId(data.users.drivers, 300);
+      driver.rating = 5;
       driver.status = 'pending';
       driver.online = false;
       driver.trips = 0;
       driver.earnings = 0;
-      driver.createdAt = new Date().toISOString().split('T')[0];
-      driver.documents = { id: false, license: false, insurance: false };
+      driver.carType = normalizeCarType(driver.carType);
+      driver.createdAt = nowIso().split('T')[0];
+      driver.location = driver.location || { lat: CITY.center[0], lng: CITY.center[1], area: CITY.name };
+      driver.bank = driver.bank || {};
+      driver.documents = driver.documents || {
+        id: { uploaded: false },
+        license: { uploaded: false },
+        ownership: { uploaded: false },
+        insurance: { uploaded: false }
+      };
       data.users.drivers.push(driver);
-      save(data);
+      save();
       return driver;
     },
 
     updateDriverStatus: (id, status) => {
-      const driver = data.users.drivers.find(d => d.id === id);
+      const driver = data.users.drivers.find((d) => d.id === id);
       if (driver) {
         driver.status = status;
-        save(data);
+        save();
       }
       return driver;
     },
 
     updateDriverOnline: (id, online) => {
-      const driver = data.users.drivers.find(d => d.id === id);
+      const driver = data.users.drivers.find((d) => d.id === id);
       if (driver) {
         driver.online = online;
-        save(data);
+        save();
       }
       return driver;
     },
 
-    // الرحلات
+    updateDriverLocation: (id, lat, lng, area) => {
+      const driver = data.users.drivers.find((d) => d.id === id);
+      if (driver) {
+        driver.location = { lat, lng, area: area || driver.location?.area || CITY.name };
+        save();
+      }
+      return driver;
+    },
+
     addRide: (ride) => {
-      ride.id = Math.max(...data.rides.map(r => r.id || 0), 5000) + 1;
-      ride.createdAt = new Date().toISOString();
+      ride.id = nextId(data.rides, 8000);
+      ride.createdAt = nowIso();
+      ride.city = CITY.name;
       data.rides.unshift(ride);
-      save(data);
+      save();
       return ride;
     },
 
     updateRide: (id, updates) => {
-      const ride = data.rides.find(r => r.id === id);
+      const ride = data.rides.find((r) => r.id === id);
       if (ride) {
         Object.assign(ride, updates);
-        save(data);
+        save();
       }
       return ride;
     },
 
-    getCustomerRides: (customerId) => {
-      return data.rides.filter(r => r.customerId === customerId).sort((a, b) => new Date(b.date) - new Date(a.date));
-    },
+    getCustomerRides: (customerId) => data.rides
+      .filter((r) => r.customerId === customerId)
+      .sort((a, b) => String(b.date).localeCompare(String(a.date))),
 
-    getDriverRides: (driverId) => {
-      return data.rides.filter(r => r.driverId === driverId).sort((a, b) => new Date(b.date) - new Date(a.date));
-    },
+    getDriverRides: (driverId) => data.rides
+      .filter((r) => r.driverId === driverId)
+      .sort((a, b) => String(b.date).localeCompare(String(a.date))),
 
-    // المعاملات المالية
     addTransaction: (transaction) => {
-      transaction.id = Math.max(...data.transactions.map(t => t.id || 0), 0) + 1;
-      transaction.createdAt = new Date().toISOString();
+      transaction.id = nextId(data.transactions);
+      transaction.createdAt = transaction.createdAt || stamp();
       data.transactions.unshift(transaction);
-      save(data);
+      save();
       return transaction;
     },
 
-    getUserTransactions: (userId, userType) => {
-      return data.transactions.filter(t => t.userId === userId && t.userType === userType)
-        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    },
+    getUserTransactions: (userId, userType) => data.transactions
+      .filter((t) => t.userId === userId && t.userType === userType)
+      .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))),
 
     updateWallet: (userId, amount) => {
-      const customer = data.users.customers.find(c => c.id === userId);
+      const customer = data.users.customers.find((c) => c.id === userId);
       if (customer) {
-        customer.wallet += amount;
-        save(data);
+        customer.wallet = Math.max(0, (customer.wallet || 0) + amount);
+        save();
       }
       return customer;
     },
 
-    // كوبونات
     validateCoupon: (code) => {
-      const coupon = data.promoCodes.find(c => c.code.toUpperCase() === code.toUpperCase() && c.active);
+      const coupon = data.promoCodes.find((c) => c.code.toUpperCase() === String(code).toUpperCase() && c.active);
       if (!coupon) return { valid: false, message: 'كود غير صحيح' };
       if (coupon.usedCount >= coupon.maxUses) return { valid: false, message: 'الكود مستنفذ' };
       if (new Date(coupon.expiresAt) < new Date()) return { valid: false, message: 'الكود منتهي الصلاحية' };
@@ -410,59 +589,64 @@ const DB = (() => {
     },
 
     useCoupon: (code) => {
-      const coupon = data.promoCodes.find(c => c.code.toUpperCase() === code.toUpperCase());
+      const coupon = data.promoCodes.find((c) => c.code.toUpperCase() === String(code).toUpperCase());
       if (coupon) {
-        coupon.usedCount++;
-        save(data);
+        coupon.usedCount += 1;
+        save();
       }
     },
 
-    // الإشعارات
     addNotification: (notif) => {
-      notif.id = Math.max(...data.notifications.map(n => n.id || 0), 0) + 1;
-      notif.createdAt = new Date().toISOString();
+      notif.id = nextId(data.notifications);
+      notif.createdAt = notif.createdAt || stamp();
       notif.read = false;
       data.notifications.unshift(notif);
-      save(data);
+      save();
       return notif;
     },
 
-    getUserNotifications: (userId, userType) => {
-      return data.notifications.filter(n => n.userId === userId && n.userType === userType)
-        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    },
+    getUserNotifications: (userId, userType) => data.notifications
+      .filter((n) => n.userId === userId && n.userType === userType)
+      .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))),
 
     markAllNotificationsRead: (userId, userType) => {
-      data.notifications.filter(n => n.userId === userId && n.userType === userType)
-        .forEach(n => n.read = true);
-      save(data);
+      data.notifications
+        .filter((n) => n.userId === userId && n.userType === userType)
+        .forEach((n) => { n.read = true; });
+      save();
     },
 
-    // التسعير
     getPricing: () => data.pricing,
     updatePricing: (pricing) => {
-      data.pricing = { ...data.pricing, ...pricing };
-      save(data);
+      data.pricing = {
+        ...data.pricing,
+        ...pricing,
+        perKm: { ...data.pricing.perKm, ...(pricing.perKm || {}) },
+        surgeMultipliers: { ...data.pricing.surgeMultipliers, ...(pricing.surgeMultipliers || {}) }
+      };
+      save();
+      return data.pricing;
     },
 
-    // الإحصائيات
+    getSettings: () => data.settings,
+    updateSettings: (updates) => {
+      data.settings = { ...data.settings, ...updates };
+      save();
+      return data.settings;
+    },
+
     getStats: () => data.stats,
-    updateStats: (updates) => {
-      Object.assign(data.stats, updates);
-      save(data);
-    },
-
     getDrivers: () => data.users.drivers,
     getCustomers: () => data.users.customers,
     getRides: () => data.rides,
     getPromoCodes: () => data.promoCodes,
 
     addPendingRequest: (request) => {
-      if (!data.pendingRequests) data.pendingRequests = [];
+      data.pendingRequests = data.pendingRequests || [];
       request.id = request.id || Date.now();
-      request.createdAt = new Date().toISOString();
+      request.createdAt = nowIso();
       data.pendingRequests.unshift(request);
-      save(data);
+      save();
       return request;
     },
 
@@ -470,14 +654,14 @@ const DB = (() => {
 
     clearPendingRequest: (id) => {
       data.pendingRequests = (data.pendingRequests || []).filter((r) => r.id !== id);
-      save(data);
+      save();
     },
 
     updateCustomer: (id, updates) => {
       const customer = data.users.customers.find((c) => c.id === id);
       if (customer) {
         Object.assign(customer, updates);
-        save(data);
+        save();
       }
       return customer;
     },
@@ -485,8 +669,9 @@ const DB = (() => {
     updateDriver: (id, updates) => {
       const driver = data.users.drivers.find((d) => d.id === id);
       if (driver) {
+        if (updates.carType) updates.carType = normalizeCarType(updates.carType);
         Object.assign(driver, updates);
-        save(data);
+        save();
       }
       return driver;
     },
@@ -494,23 +679,92 @@ const DB = (() => {
     saveAddress: (customerId, address) => {
       const customer = data.users.customers.find((c) => c.id === customerId);
       if (!customer) return null;
-      if (!customer.addresses) customer.addresses = [];
-      address.id = Math.max(0, ...customer.addresses.map((a) => a.id || 0)) + 1;
+      customer.addresses = customer.addresses || [];
+      address.id = nextId(customer.addresses);
       customer.addresses.push(address);
-      save(data);
+      save();
       return address;
     },
 
-    // إعادة تعيين
-    reset: () => {
-      localStorage.removeItem(STORAGE_KEY);
-      data = load();
+    deleteAddress: (customerId, addressId) => {
+      const customer = data.users.customers.find((c) => c.id === customerId);
+      if (!customer) return;
+      customer.addresses = (customer.addresses || []).filter((a) => a.id !== addressId);
+      save();
     },
 
-    // الوصول المباشر للبيانات الخام
+    saveDriverDocument: async (driverId, kind, fileMeta) => {
+      const driver = data.users.drivers.find((d) => d.id === driverId);
+      if (!driver) return null;
+      driver.documents = driver.documents || {};
+      const record = {
+        uploaded: true,
+        name: fileMeta.name,
+        mime: fileMeta.mime,
+        size: fileMeta.size,
+        uploadedAt: nowIso().split('T')[0]
+      };
+      driver.documents[kind] = record;
+      save();
+      if (fileMeta.data) {
+        await putFile(`driver:${driverId}:${kind}`, {
+          name: fileMeta.name,
+          mime: fileMeta.mime,
+          data: fileMeta.data
+        });
+      }
+      return record;
+    },
+
+    getDriverDocumentFile: async (driverId, kind) => getFile(`driver:${driverId}:${kind}`),
+
+    hasDocument: hasDoc,
+    normalizeCarType,
+
+    getDriversByType: (type, onlyOnline = true) => {
+      const wanted = normalizeCarType(type);
+      return data.users.drivers.filter((d) => {
+        if (d.status !== 'approved') return false;
+        if (onlyOnline && !d.online) return false;
+        return normalizeCarType(d.carType) === wanted;
+      });
+    },
+
+    addTicket: (ticket) => {
+      data.tickets = data.tickets || [];
+      ticket.id = nextId(data.tickets);
+      ticket.createdAt = stamp();
+      ticket.status = ticket.status || 'open';
+      data.tickets.unshift(ticket);
+      save();
+      return ticket;
+    },
+
+    getTickets: () => data.tickets || [],
+
+    addWithdrawal: (item) => {
+      data.withdrawals = data.withdrawals || [];
+      item.id = nextId(data.withdrawals);
+      item.createdAt = item.createdAt || nowIso().split('T')[0];
+      item.status = item.status || 'pending';
+      data.withdrawals.unshift(item);
+      save();
+      return item;
+    },
+
+    getWithdrawals: (driverId) => (data.withdrawals || []).filter((w) => !driverId || w.driverId === driverId),
+
+    snapshot: () => clone(data),
+
+    reset: () => {
+      try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
+      data = clone(initialData);
+      persist(data);
+      return data;
+    },
+
     getData: () => data
   };
 })();
 
-// تصدير للاستخدام في الوحدات الأخرى
 window.DB = DB;

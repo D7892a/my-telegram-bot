@@ -1,49 +1,46 @@
 /**
- * خرائط تكسي دجلة
- * Leaflet + OpenStreetMap + بحث محلي لبغداد
- * يعمل حتى لو تأخر تحميل المكتبة الخارجية
+ * خرائط تكسي دجلة — الناصرية فقط
+ * Leaflet + OpenStreetMap + مسار حقيقي للسائق من موقعه الفعلي
  */
 const Maps = (() => {
-  const BAGHDAD_CENTER = [33.3152, 44.3661];
-  const DEFAULT_ZOOM = 12;
+  'use strict';
+
+  const CITY_CENTER = [31.0452, 46.2561];
+  const DEFAULT_ZOOM = 13;
   const TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+  const BOUNDS = { north: 31.125, south: 30.935, east: 46.355, west: 46.075 };
 
   const PLACES = [
-    { name: 'الكرادة', address: 'الكرادة، بغداد', coords: [33.3152, 44.3661] },
-    { name: 'الكرادة داخل', address: 'الكرادة داخل، بغداد', coords: [33.3028, 44.4280] },
-    { name: 'المنصور', address: 'المنصور، بغداد', coords: [33.3128, 44.3467] },
-    { name: 'الحارثية', address: 'الحارثية، المنصور', coords: [33.3080, 44.3520] },
-    { name: 'اليرموك', address: 'اليرموك، بغداد', coords: [33.3005, 44.3400] },
-    { name: 'الجادرية', address: 'الجادرية، بغداد', coords: [33.2770, 44.3770] },
-    { name: 'أبو نؤاس', address: 'شارع أبو نؤاس، بغداد', coords: [33.3240, 44.4040] },
-    { name: 'الباب الشرقي', address: 'الباب الشرقي، بغداد', coords: [33.3285, 44.4105] },
-    { name: 'ساحة التحرير', address: 'ساحة التحرير، بغداد', coords: [33.3280, 44.4090] },
-    { name: 'شارع السعدون', address: 'شارع السعدون، بغداد', coords: [33.3220, 44.4150] },
-    { name: 'العلاوي', address: 'العلاوي، بغداد', coords: [33.3180, 44.3920] },
-    { name: 'الكاظمية', address: 'الكاظمية، بغداد', coords: [33.3800, 44.3380] },
-    { name: 'الأعظمية', address: 'الأعظمية، بغداد', coords: [33.3710, 44.3670] },
-    { name: 'الصليخ', address: 'الصليخ، بغداد', coords: [33.3900, 44.3700] },
-    { name: 'بغداد الجديدة', address: 'بغداد الجديدة', coords: [33.3050, 44.4550] },
-    { name: 'زيونة', address: 'زيونة، بغداد', coords: [33.3200, 44.4500] },
-    { name: 'الشعب', address: 'الشعب، بغداد', coords: [33.4100, 44.4000] },
-    { name: 'الدورة', address: 'الدورة، بغداد', coords: [33.2550, 44.3700] },
-    { name: 'البياع', address: 'البياع، بغداد', coords: [33.2700, 44.3200] },
-    { name: 'السيدية', address: 'السيدية، بغداد', coords: [33.2600, 44.3300] },
-    { name: 'الغزالية', address: 'الغزالية، بغداد', coords: [33.3400, 44.2600] },
-    { name: 'العامرية', address: 'العامرية، بغداد', coords: [33.3250, 44.2700] },
-    { name: 'الحرية', address: 'الحرية، بغداد', coords: [33.3600, 44.3000] },
-    { name: 'الشعلة', address: 'الشعلة، بغداد', coords: [33.3700, 44.2800] },
-    { name: 'الزعفرانية', address: 'الزعفرانية، بغداد', coords: [33.2400, 44.5000] },
-    { name: 'مطار بغداد الدولي', address: 'مطار بغداد الدولي', coords: [33.2625, 44.2346] },
-    { name: 'جامعة بغداد', address: 'جامعة بغداد، الجادرية', coords: [33.2730, 44.3775] },
-    { name: 'مدينة الطب', address: 'مدينة الطب، باب المعظم', coords: [33.3450, 44.3850] },
-    { name: 'بغداد مول', address: 'بغداد مول، الجادرية', coords: [33.2775, 44.3760] },
-    { name: 'مول المنصور', address: 'مول المنصور', coords: [33.3140, 44.3450] },
-    { name: 'محطة بغداد', address: 'محطة قطار بغداد', coords: [33.3255, 44.3900] },
-    { name: 'كرادة مريم', address: 'كرادة مريم، بغداد', coords: [33.3120, 44.3850] },
-    { name: 'باب المعظم', address: 'باب المعظم، بغداد', coords: [33.3480, 44.3900] },
-    { name: 'الوشاش', address: 'الوشاش، المنصور', coords: [33.3050, 44.3550] },
-    { name: 'الجعيفر', address: 'الجعيفر، بغداد', coords: [33.3350, 44.3550] }
+    { name: 'الحبوبي', address: 'شارع الحبوبي، مركز الناصرية', coords: [31.0461, 46.2525] },
+    { name: 'الصالحية', address: 'حي الصالحية، الناصرية', coords: [31.0520, 46.2642] },
+    { name: 'الشموخ', address: 'حي الشموخ، الناصرية', coords: [31.0680, 46.2780] },
+    { name: 'الإسكان', address: 'حي الإسكان، الناصرية', coords: [31.0750, 46.2350] },
+    { name: 'الجمهورية', address: 'حي الجمهورية، الناصرية', coords: [31.0380, 46.2480] },
+    { name: 'الأورفلي', address: 'حي الأورفلي، الناصرية', coords: [31.0550, 46.2400] },
+    { name: 'السكك', address: 'حي السكك، الناصرية', coords: [31.0500, 46.2700] },
+    { name: 'الشعلة', address: 'حي الشعلة، الناصرية', coords: [31.0720, 46.2500] },
+    { name: 'المتنبي', address: 'حي المتنبي، الناصرية', coords: [31.0420, 46.2620] },
+    { name: '14 تموز', address: 'حي 14 تموز، الناصرية', coords: [31.0350, 46.2550] },
+    { name: 'سومر', address: 'حي سومر، الناصرية', coords: [31.0280, 46.2680] },
+    { name: 'حي أور', address: 'حي أور السكني، الناصرية', coords: [31.0200, 46.2450] },
+    { name: 'زقورة أور', address: 'مدينة أور الأثرية', coords: [30.9626, 46.1031] },
+    { name: 'جامعة ذي قار', address: 'جامعة ذي قار، الناصرية', coords: [31.0320, 46.2380] },
+    { name: 'المستشفى العام', address: 'مستشفى الناصرية العام', coords: [31.0480, 46.2450] },
+    { name: 'السوق الكبير', address: 'السوق الكبير، الناصرية', coords: [31.0440, 46.2580] },
+    { name: 'كورنيش الفرات', address: 'كورنيش نهر الفرات', coords: [31.0410, 46.2500] },
+    { name: 'جسر النصر', address: 'جسر النصر، الناصرية', coords: [31.0400, 46.2470] },
+    { name: 'حي العسكري', address: 'حي العسكري، الناصرية', coords: [31.0600, 46.2300] },
+    { name: 'حي المعلمين', address: 'حي المعلمين، الناصرية', coords: [31.0580, 46.2700] },
+    { name: 'حي الحسين', address: 'حي الحسين، الناصرية', coords: [31.0650, 46.2550] },
+    { name: 'حي الأمير', address: 'حي الأمير، الناصرية', coords: [31.0300, 46.2750] },
+    { name: 'حي النفط', address: 'حي النفط، الناصرية', coords: [31.0800, 46.2600] },
+    { name: 'الصناعي', address: 'الحي الصناعي، الناصرية', coords: [31.0780, 46.2280] },
+    { name: 'شارع بغداد', address: 'شارع بغداد، الناصرية', coords: [31.0620, 46.2650] },
+    { name: 'ملعب الناصرية', address: 'ملعب الناصرية الأولمبي', coords: [31.0500, 46.2400] },
+    { name: 'مجمع ذي قار', address: 'مجمع ذي قار التجاري', coords: [31.0470, 46.2550] },
+    { name: 'محطة القطار', address: 'محطة قطار الناصرية', coords: [31.0520, 46.2720] },
+    { name: 'حي الصابئة', address: 'حي الصابئة، الناصرية', coords: [31.0430, 46.2450] },
+    { name: 'الجامعة التقنية', address: 'الجامعة التقنية الجنوبية', coords: [31.0260, 46.2520] }
   ];
 
   let customerMap = null;
@@ -51,17 +48,21 @@ const Maps = (() => {
   let bookingMap = null;
   let trackingMap = null;
   let userMarker = null;
-  let driverMarker = null;
   let fromMarker = null;
   let toMarker = null;
   let routeLayer = null;
-  let nearbyLayer = null;
+  let trackingDriverMarker = null;
+  let trackingPickupLine = null;
+  let trackingTripLine = null;
+  let trackingPassedLine = null;
   let userCoords = null;
   let fromCoords = null;
   let toCoords = null;
   let fromLabel = '';
   let toLabel = '';
   let pickMode = 'auto';
+  let trackTimer = null;
+  let trackState = null;
   const listeners = {};
 
   function on(event, fn) {
@@ -96,6 +97,15 @@ const Maps = (() => {
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   }
 
+  function isInsideCity(lat, lng) {
+    return lat >= BOUNDS.south && lat <= BOUNDS.north && lng >= BOUNDS.west && lng <= BOUNDS.east;
+  }
+
+  function clampToCity(lat, lng) {
+    if (isInsideCity(lat, lng)) return [lat, lng];
+    return CITY_CENTER.slice();
+  }
+
   function makeIcon(html, size) {
     return L.divIcon({
       className: 'dijla-marker',
@@ -109,14 +119,23 @@ const Maps = (() => {
     L.tileLayer(TILE_URL, { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
   }
 
+  function cityLatLngBounds() {
+    return L.latLngBounds(
+      [BOUNDS.south, BOUNDS.west],
+      [BOUNDS.north, BOUNDS.east]
+    );
+  }
+
   function createMap(id, zoom = DEFAULT_ZOOM) {
     const el = document.getElementById(id);
     if (!el || !window.L) return null;
     const map = L.map(id, {
       zoomControl: false,
       attributionControl: false,
-      tap: true
-    }).setView(BAGHDAD_CENTER, zoom);
+      tap: true,
+      maxBounds: cityLatLngBounds().pad(0.18),
+      maxBoundsViscosity: 0.85
+    }).setView(CITY_CENTER, zoom);
     addTiles(map);
     window.setTimeout(() => map.invalidateSize(), 80);
     window.setTimeout(() => map.invalidateSize(), 320);
@@ -126,7 +145,7 @@ const Maps = (() => {
 
   function addPopularPlaces(map) {
     if (!map) return;
-    PLACES.slice(0, 12).forEach((place) => {
+    PLACES.slice(0, 14).forEach((place) => {
       L.circleMarker(place.coords, {
         radius: 5,
         color: '#fff',
@@ -137,31 +156,47 @@ const Maps = (() => {
     });
   }
 
-  function getApprovedOnlineDrivers() {
-    const users = window.DB?.get?.('users');
-    const list = users?.drivers || [];
-    return list.filter((d) => d.status === 'approved' && d.online && d.location);
+  function getApprovedOnlineDrivers(type) {
+    const wanted = type ? window.DB?.normalizeCarType?.(type) : null;
+    const list = window.DB?.getDrivers?.() || [];
+    return list.filter((d) => {
+      if (d.status !== 'approved' || !d.online || !d.location) return false;
+      if (wanted && window.DB.normalizeCarType(d.carType) !== wanted) return false;
+      return true;
+    });
   }
 
-  function showNearbyDrivers(map) {
+  function showNearbyDrivers(map, type) {
     if (!map) return;
-    getApprovedOnlineDrivers().forEach((driver) => {
+    getApprovedOnlineDrivers(type).forEach((driver) => {
       L.marker([driver.location.lat, driver.location.lng], {
         icon: makeIcon(
           `<div class="driver-marker">${driver.firstName?.[0] || 'س'}</div>`,
           36
         )
       }).addTo(map).bindPopup(`
-        <div style="text-align:right;direction:rtl;min-width:150px">
+        <div style="text-align:right;direction:rtl;min-width:160px">
           <strong>${driver.firstName} ${driver.lastName}</strong><br>
           <small>${driver.carModel || ''}</small><br>
+          <small>${typeLabel(driver.carType)} • ${driver.location.area || 'الناصرية'}</small><br>
           <small>⭐ ${driver.rating} (${driver.trips || 0} رحلة)</small>
         </div>
       `);
     });
   }
 
+  function typeLabel(type) {
+    return {
+      economy: 'اقتصادي',
+      comfort: 'كومفورت',
+      premium: 'بريميوم',
+      van: 'عائلي',
+      sedan: 'اقتصادي'
+    }[type] || type || '';
+  }
+
   function reverseGeocode(lat, lng) {
+    if (!isInsideCity(lat, lng)) return 'خارج منطقة الخدمة';
     let best = PLACES[0];
     let bestD = Infinity;
     PLACES.forEach((place) => {
@@ -171,13 +206,13 @@ const Maps = (() => {
         best = place;
       }
     });
-    if (bestD < 0.8) return best.name;
-    if (bestD < 2.5) return `قرب ${best.name}`;
+    if (bestD < 0.45) return best.name;
+    if (bestD < 1.4) return `قرب ${best.name}`;
     return `${best.name} · ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
   }
 
   function localSearch(query) {
-    if (!query) return PLACES.slice(0, 8);
+    if (!query) return PLACES.slice(0, 10);
     const q = String(query).trim().toLowerCase();
     return PLACES.filter((p) =>
       p.name.includes(query) ||
@@ -192,18 +227,20 @@ const Maps = (() => {
     if (!query || query.length < 2) return local.slice(0, 8);
     try {
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query + ' بغداد العراق')}&format=json&limit=5&accept-language=ar`,
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query + ' الناصرية ذي قار العراق')}&format=json&limit=6&accept-language=ar&viewbox=46.07,31.13,46.36,30.93&bounded=1`,
         { headers: { Accept: 'application/json' } }
       );
       if (!response.ok) return local;
       const results = await response.json();
-      const remote = (results || []).map((r) => ({
-        name: (r.display_name || '').split(',')[0],
-        address: r.display_name,
-        fullName: r.display_name,
-        coords: [parseFloat(r.lat), parseFloat(r.lon)],
-        type: r.type
-      }));
+      const remote = (results || [])
+        .map((r) => ({
+          name: (r.display_name || '').split(',')[0],
+          address: r.display_name,
+          fullName: r.display_name,
+          coords: [parseFloat(r.lat), parseFloat(r.lon)],
+          type: r.type
+        }))
+        .filter((r) => isInsideCity(r.coords[0], r.coords[1]));
       const merged = [...remote];
       local.forEach((item) => {
         if (!merged.some((m) => m.name === item.name)) merged.push(item);
@@ -229,6 +266,10 @@ const Maps = (() => {
   }
 
   function setFromPoint(lat, lng, label, silent) {
+    if (!isInsideCity(lat, lng)) {
+      emit('outside', { lat, lng });
+      return null;
+    }
     fromCoords = [lat, lng];
     fromLabel = label || reverseGeocode(lat, lng);
     const map = ensureBookingMap();
@@ -243,9 +284,14 @@ const Maps = (() => {
       }).addTo(map).bindPopup(`الانطلاق: ${fromLabel}`);
       fromMarker.on('dragend', (e) => {
         const p = e.target.getLatLng();
+        if (!isInsideCity(p.lat, p.lng)) {
+          fromMarker.setLatLng(fromCoords);
+          emit('outside', { lat: p.lat, lng: p.lng });
+          return;
+        }
         setFromPoint(p.lat, p.lng, reverseGeocode(p.lat, p.lng));
       });
-      if (!toCoords) map.setView([lat, lng], 14);
+      if (!toCoords) map.setView([lat, lng], 15);
     }
     if (!silent) emit('from', { lat, lng, label: fromLabel, coords: fromCoords });
     if (fromCoords && toCoords) calculateRoute();
@@ -253,6 +299,10 @@ const Maps = (() => {
   }
 
   function setToPoint(lat, lng, label, silent) {
+    if (!isInsideCity(lat, lng)) {
+      emit('outside', { lat, lng });
+      return null;
+    }
     toCoords = [lat, lng];
     toLabel = label || reverseGeocode(lat, lng);
     const map = ensureBookingMap();
@@ -267,12 +317,17 @@ const Maps = (() => {
       }).addTo(map).bindPopup(`الوجهة: ${toLabel}`);
       toMarker.on('dragend', (e) => {
         const p = e.target.getLatLng();
+        if (!isInsideCity(p.lat, p.lng)) {
+          toMarker.setLatLng(toCoords);
+          emit('outside', { lat: p.lat, lng: p.lng });
+          return;
+        }
         setToPoint(p.lat, p.lng, reverseGeocode(p.lat, p.lng));
       });
       if (fromCoords) {
         map.fitBounds(L.latLngBounds([fromCoords, toCoords]), { padding: [50, 50] });
       } else {
-        map.setView([lat, lng], 14);
+        map.setView([lat, lng], 15);
       }
     }
     if (!silent) emit('to', { lat, lng, label: toLabel, coords: toCoords });
@@ -283,6 +338,10 @@ const Maps = (() => {
   function handleBookingClick(e) {
     const lat = e.latlng.lat;
     const lng = e.latlng.lng;
+    if (!isInsideCity(lat, lng)) {
+      emit('outside', { lat, lng });
+      return;
+    }
     const label = reverseGeocode(lat, lng);
     if (pickMode === 'from' || (pickMode === 'auto' && !fromCoords)) {
       setFromPoint(lat, lng, label);
@@ -304,6 +363,10 @@ const Maps = (() => {
       addPopularPlaces(customerMap);
       showNearbyDrivers(customerMap);
       customerMap.on('click', (e) => {
+        if (!isInsideCity(e.latlng.lat, e.latlng.lng)) {
+          emit('outside', { lat: e.latlng.lat, lng: e.latlng.lng });
+          return;
+        }
         const label = reverseGeocode(e.latlng.lat, e.latlng.lng);
         emit('homeclick', { lat: e.latlng.lat, lng: e.latlng.lng, label });
       });
@@ -346,50 +409,56 @@ const Maps = (() => {
         invalidateSize('trackingMap');
         return;
       }
-      trackingMap = createMap('trackingMap', 13);
+      trackingMap = createMap('trackingMap', 14);
     });
   }
 
   function locateUser(cb) {
-    const fallback = () => {
-      userCoords = BAGHDAD_CENTER.slice();
-      placeUserMarker(userCoords, 'بغداد — الموقع الافتراضي');
-      if (cb) cb(userCoords);
+    const fallback = (reason) => {
+      userCoords = CITY_CENTER.slice();
+      placeUserMarker(userCoords, 'مركز الناصرية — الموقع الافتراضي');
+      if (cb) cb(userCoords, reason || 'fallback');
     };
 
     if (!navigator.geolocation) {
-      fallback();
+      fallback('unsupported');
       return;
     }
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        userCoords = [pos.coords.latitude, pos.coords.longitude];
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        if (!isInsideCity(lat, lng)) {
+          userCoords = CITY_CENTER.slice();
+          placeUserMarker(userCoords, 'خدمتنا داخل الناصرية فقط');
+          if (cb) cb(userCoords, 'outside');
+          emit('outside', { lat, lng });
+          return;
+        }
+        userCoords = [lat, lng];
         placeUserMarker(userCoords, 'موقعك الحالي');
-        if (cb) cb(userCoords);
+        if (cb) cb(userCoords, 'ok');
       },
-      () => fallback(),
-      { enableHighAccuracy: true, timeout: 6000, maximumAge: 30000 }
+      () => fallback('denied'),
+      { enableHighAccuracy: true, timeout: 7000, maximumAge: 20000 }
     );
   }
 
   function placeUserMarker(coords, title) {
     if (!customerMap || !window.L) return;
-    customerMap.setView(coords, 14);
+    customerMap.setView(coords, 15);
     if (userMarker) customerMap.removeLayer(userMarker);
     userMarker = L.marker(coords, {
-      icon: makeIcon(
-        `<div class="user-marker"></div>`,
-        24
-      )
+      icon: makeIcon(`<div class="user-marker"></div>`, 24)
     }).addTo(customerMap).bindPopup(title);
   }
 
-  function calculateDirectRoute() {
-    if (!fromCoords || !toCoords) return null;
-    const distance = Math.max(haversine(fromCoords, toCoords), 0.4);
-    const duration = Math.max(distance * 2.4, 4);
-    return { distance, duration, coords: [fromCoords, toCoords], fallback: true };
+  function calculateDirectRoute(a, b) {
+    if (!a || !b) return null;
+    const distance = Math.max(haversine(a, b), 0.4);
+    const duration = Math.max(distance * 2.6, 4);
+    return { distance, duration, coords: [a, b], fallback: true };
   }
 
   function drawRoute(coords) {
@@ -404,85 +473,180 @@ const Maps = (() => {
     bookingMap.fitBounds(routeLayer.getBounds(), { padding: [48, 48] });
   }
 
-  async function calculateRoute() {
-    if (!fromCoords || !toCoords) return null;
-    const fallback = calculateDirectRoute();
+  async function fetchOsrm(from, to) {
+    const url = `https://router.project-osrm.org/route/v1/driving/${from[1]},${from[0]};${to[1]},${to[0]}?overview=full&geometries=geojson`;
+    const response = await fetch(url);
+    const payload = await response.json();
+    if (!payload.routes?.[0]) return null;
+    const route = payload.routes[0];
+    return {
+      distance: route.distance / 1000,
+      duration: route.duration / 60,
+      coords: route.geometry.coordinates.map((c) => [c[1], c[0]]),
+      fallback: false
+    };
+  }
+
+  async function routeBetween(from, to) {
+    const fallback = calculateDirectRoute(from, to);
     try {
-      const url = `https://router.project-osrm.org/route/v1/driving/${fromCoords[1]},${fromCoords[0]};${toCoords[1]},${toCoords[0]}?overview=full&geometries=geojson`;
-      const response = await fetch(url);
-      const data = await response.json();
-      if (data.routes?.[0]) {
-        const route = data.routes[0];
-        const result = {
-          distance: route.distance / 1000,
-          duration: route.duration / 60,
-          coords: route.geometry.coordinates.map((c) => [c[1], c[0]]),
-          fallback: false
-        };
-        drawRoute(result.coords);
-        emit('route', result);
-        return result;
-      }
-    } catch (_) {
-      /* fallback below */
-    }
-    if (fallback) {
-      drawRoute(fallback.coords);
-      emit('route', fallback);
-    }
+      const real = await fetchOsrm(from, to);
+      if (real) return real;
+    } catch (_) { /* fallback */ }
     return fallback;
   }
 
-  function startTracking(from, to, driver) {
+  async function calculateRoute() {
+    if (!fromCoords || !toCoords) return null;
+    const result = await routeBetween(fromCoords, toCoords);
+    if (result) {
+      drawRoute(result.coords);
+      emit('route', result);
+    }
+    return result;
+  }
+
+  function clearTrackTimer() {
+    if (trackTimer) {
+      window.clearInterval(trackTimer);
+      trackTimer = null;
+    }
+  }
+
+  function stopTracking() {
+    clearTrackTimer();
+    trackState = null;
+  }
+
+  function remainingDistance(coords, index) {
+    let sum = 0;
+    for (let i = index; i < coords.length - 1; i += 1) {
+      sum += haversine(coords[i], coords[i + 1]);
+    }
+    return sum;
+  }
+
+  async function startTracking(from, to, driver) {
+    stopTracking();
+    const pickup = from;
+    const dest = to;
+    const start = driver?.location
+      ? [driver.location.lat, driver.location.lng]
+      : [
+        pickup[0] + 0.008,
+        pickup[1] - 0.007
+      ];
+
+    const toPickup = await routeBetween(start, pickup);
+    const toDest = await routeBetween(pickup, dest);
+
     whenReady(() => {
       if (!trackingMap) initTrackingMap();
       window.setTimeout(() => {
-        if (!trackingMap) return;
+        if (!trackingMap || !window.L) return;
         trackingMap.eachLayer((layer) => {
           if (layer instanceof L.Marker || layer instanceof L.Polyline) {
             trackingMap.removeLayer(layer);
           }
         });
-        L.marker(from, {
+
+        L.marker(pickup, {
           icon: makeIcon(`<div style="width:22px;height:22px;background:#22c55e;border:3px solid #fff;border-radius:50%"></div>`, 22)
-        }).addTo(trackingMap);
-        L.marker(to, {
+        }).addTo(trackingMap).bindPopup('نقطة الانطلاق');
+
+        L.marker(dest, {
           icon: makeIcon(`<div style="width:22px;height:22px;background:#ef4444;border:3px solid #fff;border-radius:50%"></div>`, 22)
+        }).addTo(trackingMap).bindPopup('الوجهة');
+
+        trackingPickupLine = L.polyline(toPickup.coords, {
+          color: '#3b82f6',
+          weight: 4,
+          opacity: 0.85
         }).addTo(trackingMap);
-        driverMarker = L.marker(from, {
+
+        trackingTripLine = L.polyline(toDest.coords, {
+          color: '#facc15',
+          weight: 4,
+          opacity: 0.45,
+          dashArray: '8 6'
+        }).addTo(trackingMap);
+
+        trackingPassedLine = L.polyline([start], {
+          color: '#22c55e',
+          weight: 4,
+          opacity: 0.9
+        }).addTo(trackingMap);
+
+        trackingDriverMarker = L.marker(start, {
           icon: makeIcon(
             `<div class="driver-marker">${driver?.firstName?.[0] || 'ك'}</div>`,
             40
           )
-        }).addTo(trackingMap);
-        routeLayer = L.polyline([from, to], {
-          color: '#facc15',
-          weight: 4,
-          opacity: 0.7,
-          dashArray: '8 6'
-        }).addTo(trackingMap);
-        trackingMap.fitBounds(L.latLngBounds([from, to]), { padding: [60, 60] });
-        simulateDriverMovement(from, to, (point) => driverMarker?.setLatLng(point));
+        }).addTo(trackingMap).bindPopup(`${driver?.firstName || 'السائق'} في الطريق إليك`);
+
+        const allPts = [...toPickup.coords, ...toDest.coords];
+        trackingMap.fitBounds(L.latLngBounds(allPts), { padding: [50, 50] });
+
+        trackState = {
+          phase: 'to_pickup',
+          pickupPath: toPickup.coords,
+          tripPath: toDest.coords,
+          index: 0,
+          driverId: driver?.id,
+          pickupEta: toPickup.duration,
+          tripEta: toDest.duration
+        };
+
+        const pickupSteps = Math.max(18, Math.min(48, toPickup.coords.length));
+        const tripSteps = Math.max(22, Math.min(70, toDest.coords.length));
+        const pickupMs = Math.max(9000, Math.min(28000, toPickup.duration * 700));
+        const tripMs = Math.max(12000, Math.min(40000, toDest.duration * 500));
+
+        animatePhase('to_pickup', toPickup.coords, pickupSteps, pickupMs / pickupSteps, () => {
+          emit('arrived_pickup', { coords: pickup });
+          if (trackingPickupLine) trackingMap.removeLayer(trackingPickupLine);
+          if (trackingTripLine) {
+            trackingTripLine.setStyle({ opacity: 0.95, dashArray: null });
+          }
+          animatePhase('to_dest', toDest.coords, tripSteps, tripMs / tripSteps, () => {
+            emit('arrived_dest', { coords: dest });
+          });
+        });
+
         invalidateSize('trackingMap');
-      }, 180);
+      }, 160);
     });
   }
 
-  function simulateDriverMovement(from, to, callback) {
-    const steps = 40;
+  function animatePhase(phase, coords, steps, interval, onDone) {
+    clearTrackTimer();
+    if (!coords?.length) {
+      onDone?.();
+      return;
+    }
+    const stride = Math.max(1, Math.floor(coords.length / steps));
     let i = 0;
-    const timer = window.setInterval(() => {
-      if (i >= steps) {
-        window.clearInterval(timer);
-        return;
+    if (trackState) {
+      trackState.phase = phase;
+      trackState.index = 0;
+    }
+    trackTimer = window.setInterval(() => {
+      i = Math.min(i + stride, coords.length - 1);
+      const point = coords[i];
+      trackingDriverMarker?.setLatLng(point);
+      trackingPassedLine?.addLatLng(point);
+      if (trackingMap) trackingMap.panTo(point, { animate: true, duration: 0.4 });
+      const remainKm = remainingDistance(coords, i);
+      const remainMin = Math.max(1, remainKm * 2.6);
+      emit('track', { phase, point, remainKm, remainMin, index: i, total: coords.length });
+      if (trackState?.driverId && window.DB?.updateDriverLocation) {
+        window.DB.updateDriverLocation(trackState.driverId, point[0], point[1], reverseGeocode(point[0], point[1]));
       }
-      const ratio = (i + 1) / steps;
-      callback([
-        from[0] + (to[0] - from[0]) * ratio,
-        from[1] + (to[1] - from[1]) * ratio
-      ]);
-      i += 1;
-    }, 1600);
+      if (i >= coords.length - 1) {
+        clearTrackTimer();
+        onDone?.();
+      }
+    }, interval);
   }
 
   function resetBookingMap() {
@@ -496,7 +660,7 @@ const Maps = (() => {
       if (toMarker) bookingMap.removeLayer(toMarker);
       if (routeLayer) bookingMap.removeLayer(routeLayer);
       fromMarker = toMarker = routeLayer = null;
-      bookingMap.setView(BAGHDAD_CENTER, DEFAULT_ZOOM);
+      bookingMap.setView(CITY_CENTER, DEFAULT_ZOOM);
     }
     emit('reset');
   }
@@ -513,6 +677,11 @@ const Maps = (() => {
     if (map && coords) map.setView(coords, zoom);
   }
 
+  function focusDriverOnHome(driver) {
+    if (!driverMap || !driver?.location) return;
+    driverMap.setView([driver.location.lat, driver.location.lng], 15);
+  }
+
   return {
     initCustomerMap,
     initDriverMap,
@@ -524,27 +693,33 @@ const Maps = (() => {
     setFromPoint,
     setToPoint,
     calculateRoute,
+    routeBetween,
     startTracking,
+    stopTracking,
     getCurrentCoords: () => userCoords,
     getFromCoords: () => fromCoords,
     getToCoords: () => toCoords,
     getFromLabel: () => fromLabel,
     getToLabel: () => toLabel,
-    setFromCoords: (c) => { fromCoords = c; },
-    setToCoords: (c) => { toCoords = c; },
     resetBookingMap,
     invalidateSize,
     setPickMode,
     getPickMode,
     reverseGeocode,
     haversine,
+    isInsideCity,
+    clampToCity,
     whenReady,
     on,
     flyTo,
     showNearbyDrivers,
     getApprovedOnlineDrivers,
+    focusDriverOnHome,
+    typeLabel,
     PLACES,
-    BAGHDAD_CENTER
+    CITY_CENTER,
+    BAGHDAD_CENTER: CITY_CENTER,
+    BOUNDS
   };
 })();
 
