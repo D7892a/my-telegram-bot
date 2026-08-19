@@ -563,9 +563,7 @@
             <i class="fa-solid fa-bell"></i>
             <span class="badge-dot" id="custNotifDot"></span>
           </button>
-          <button class="header-icon" onclick="openWallet()">
-            <i class="fa-solid fa-wallet"></i>
-          </button>
+
           <button class="header-icon" onclick="logout()">
             <i class="fa-solid fa-right-from-bracket"></i>
           </button>
@@ -580,11 +578,13 @@
               <h2>أهلاً، <span id="greetName">أحمد</span> 👋</h2>
               <p>وين رايح اليوم بالناصرية؟ حدد الانطلاق والوجهة من الخريطة</p>
             </div>
-            <div class="quick-balance" onclick="openWallet()">
-              <span>الرصيد</span>
-              <strong id="quickBalance">25,000 <small>د.ع</small></strong>
+            <div class="quick-balance company-balance-note">
+              <span>الدفع</span>
+              <strong>نقداً عند انتهاء الرحلة</strong>
             </div>
           </div>
+
+          <div id="customerAnnouncements" class="announcement-feed"></div>
 
           <!-- خريطة كبيرة -->
           <div class="big-map-card">
@@ -819,13 +819,18 @@
               </div>
               <div class="form-group">
                 <label><i class="fa-solid fa-credit-card"></i> طريقة الدفع</label>
-                <select id="paymentMethod">
-                  <option value="cash">💵 نقداً</option>
-                  <option value="wallet">👛 محفظة</option>
-                  <option value="card">💳 بطاقة</option>
+                <select id="paymentMethod" disabled>
+                  <option value="cash">💵 نقداً عند انتهاء الرحلة</option>
                 </select>
+                <small class="muted payment-note">لا يوجد شحن أو محفظة. الدفع نقداً للسائق، وتُسدّد حصة الشركة إلكترونياً.</small>
               </div>
             </div>
+          </div>
+
+          <div class="section-block ride-options-card">
+            <div class="block-head"><h3><i class="fa-solid fa-sliders"></i> خيارات الرحلة</h3></div>
+            <label class="checkbox"><input type="checkbox" id="returnTrip" /> <span>رحلة مرجع (ذهاب وإياب)</span></label>
+            <div class="form-row"><div class="form-group"><label>عدد التوقفات</label><select id="stopCount"><option value="0">بدون توقف</option><option value="1">توقف واحد</option><option value="2">توقفان</option><option value="3">3 توقفات</option></select></div><div class="form-group"><label>أجرة التوقف</label><p class="muted" id="stopFeePreview">تحددها الإدارة</p></div></div>
           </div>
 
           <button class="btn-primary big full book-now-btn" onclick="findDriver()">
@@ -926,50 +931,11 @@
 
         <!-- ============== المحفظة ============== -->
         <div class="dash-tab" id="custWallet">
-          <h2 class="page-title"><i class="fa-solid fa-wallet"></i> محفظتي</h2>
-
-          <div class="wallet-main-card">
-            <div class="wallet-bg"></div>
-            <div class="wallet-content">
-              <div>
-                <p class="muted small">الرصيد المتاح</p>
-                <h2 id="walletBalance">25,000 <small>د.ع</small></h2>
-              </div>
-              <div class="wallet-actions">
-                <button class="wa-btn" onclick="walletAction('topup')">
-                  <i class="fa-solid fa-plus"></i> شحن
-                </button>
-                <button class="wa-btn" onclick="walletAction('send')">
-                  <i class="fa-solid fa-paper-plane"></i> تحويل
-                </button>
-                <button class="wa-btn" onclick="walletAction('withdraw')">
-                  <i class="fa-solid fa-money-bill-wave"></i> سحب
-                </button>
-              </div>
-            </div>
+          <h2 class="page-title"><i class="fa-solid fa-wallet"></i> المحفظة</h2>
+          <div class="info-box wallet-disabled-card">
+            <i class="fa-solid fa-ban"></i>
+            <div><strong>المحفظة متوقفة حالياً</strong><p>ماكو شحن أو تحويل أو سحب. ادفع أجرة الرحلة نقداً عند انتهائها، وحصة الموقع تُسدّد عن طريق بطاقة الشركة.</p></div>
           </div>
-
-          <div class="wallet-cards">
-            <div class="mini-card" onclick="walletAction('topup')">
-              <i class="fa-solid fa-plus-circle icon-blue"></i>
-              <span>شحن المحفظة</span>
-            </div>
-            <div class="mini-card" onclick="walletAction('topup')">
-              <i class="fa-solid fa-mobile-screen icon-green"></i>
-              <span>من زين كاش</span>
-            </div>
-            <div class="mini-card" onclick="walletAction('topup')">
-              <i class="fa-solid fa-mobile-screen icon-yellow"></i>
-              <span>من آسيا كاش</span>
-            </div>
-            <div class="mini-card" onclick="walletAction('card')">
-              <i class="fa-solid fa-credit-card icon-purple"></i>
-              <span>بطاقة بنكية</span>
-            </div>
-          </div>
-
-          <h3 class="sub-title"><i class="fa-solid fa-list"></i> آخر العمليات</h3>
-          <div id="walletTransactions" class="transactions-list"></div>
         </div>
 
         <!-- ============== حسابي ============== -->
@@ -1085,7 +1051,7 @@
         <button class="bnav-btn fab" data-tab="custBook">
           <i class="fa-solid fa-plus"></i>
         </button>
-        <button class="bnav-btn" data-tab="custWallet">
+        <button class="bnav-btn hidden" data-tab="custWallet">
           <i class="fa-solid fa-wallet"></i>
           <span>المحفظة</span>
         </button>
@@ -1658,6 +1624,9 @@
                 <label>سعر الانطلاق</label>
                 <input type="number" id="priceBase" value="1000" />
               </div>
+              <div class="setting-row"><label>أجرة كل توقف (د.ع)</label><input type="number" id="stopFee" value="1000" /></div>
+              <div class="setting-row"><label>نسبة الرحلة المرجع (%)</label><input type="number" id="returnTripFeePercent" value="100" /></div>
+              </div>
               <button class="btn-primary" onclick="savePricing()">
                 <i class="fa-solid fa-floppy-disk"></i> حفظ التغييرات
               </button>
@@ -1677,6 +1646,7 @@
                 <label>كود الخصم الترحيبي</label>
                 <input type="text" id="welcomeCode" value="WELCOME50" />
               </div>
+              <div class="setting-row"><label>رقم بطاقة الشركة لاستلام النسبة</label><input type="text" id="companyCardNumber" placeholder="يُحفظ بشكل آمن في الخادم" /></div>
               <button class="btn-primary" onclick="saveCommissions()">
                 <i class="fa-solid fa-floppy-disk"></i> حفظ التغييرات
               </button>
@@ -1748,6 +1718,18 @@
               </button>
             </div>
 
+            <div class="setting-card wide announcements-admin-card">
+              <h3><i class="fa-solid fa-bullhorn"></i> إعلانات الزبائن</h3>
+              <div class="setting-row"><label>عنوان الإعلان</label><input id="announcementTitle" placeholder="عرض جديد أو تنبيه مهم" /></div>
+              <div class="setting-row"><label>نص الإعلان</label><textarea id="announcementBody" rows="3" placeholder="اكتب الإعلان الذي سيظهر للزبائن"></textarea></div>
+              <button class="btn-primary" onclick="publishAnnouncement()"><i class="fa-solid fa-paper-plane"></i> نشر للزبائن</button>
+              <div id="announcementsList" class="tickets-list"></div>
+            </div>
+            <div class="setting-card wide">
+              <h3><i class="fa-solid fa-robot"></i> مساعد الدعم الذكي</h3>
+              <p class="muted small">يقترح رداً أولياً على الرسالة، وإذا لم يجد حلاً ينشئ تصعيداً للإدارة للمحادثة المباشرة.</p>
+              <div class="info-box"><i class="fa-solid fa-circle-info"></i><span>المساعد تجريبي حالياً ويحتاج ربط API ذكاء اصطناعي آمن على الخادم قبل التشغيل الفعلي.</span></div>
+            </div>
             <div class="setting-card">
               <h3><i class="fa-solid fa-database"></i> قاعدة البيانات (Firebase)</h3>
               <div id="dbStatusBox" class="support-stats"></div>

@@ -3633,3 +3633,15 @@ ong { font-size: 20px; }
 .ticket-main { display: flex; flex-direction: column; gap: 4px; }
 .ticket-main p { font-size: 13px; margin: 4px 0 0; line-height: 1.7; }
 .ticket-row button { padding: 6px 14px; font-size: 12px; }
+
+/* ميزات الدفع والتواصل الجديدة */
+.payment-note { display:block; margin-top:6px; }
+.company-balance-note { cursor:default; }
+.wallet-disabled-card { margin: 20px 0; display:flex; gap:14px; align-items:flex-start; background: rgba(239,68,68,.08); border:1px solid rgba(239,68,68,.2); }
+.wallet-disabled-card > i { color:var(--danger); font-size:24px; }
+.announcement-feed { display:grid; gap:10px; margin:16px 0; }
+.announcement-card { display:flex; gap:12px; align-items:flex-start; padding:14px 16px; border-radius:14px; background:linear-gradient(135deg,#fff7cc,#fff); border:1px solid #f5d76e; box-shadow:var(--shadow-sm); }
+.announcement-card > i { color:#d89b00; font-size:20px; margin-top:3px; }
+.announcement-card strong { display:block; margin-bottom:3px; }
+.announcement-card p { color:var(--text-light); font-size:13px; }
+.ticket-actions { display:flex; gap:6px; flex-wrap:wrap; }

@@ -40,13 +40,14 @@ const Cloud = (() => {
     transactions: (d) => d.transactions,
     notifications: (d) => d.notifications,
     tickets: (d) => d.tickets,
+    announcements: (d) => d.announcements,
     withdrawals: (d) => d.withdrawals,
     promoCodes: (d) => d.promoCodes,
     pendingRequests: (d) => d.pendingRequests
   };
 
   const KEY_FIELD = { promoCodes: 'code' };
-  const LIVE_COLLECTIONS = ['customers', 'drivers', 'rides', 'pendingRequests', 'notifications', 'tickets', 'withdrawals', 'promoCodes'];
+  const LIVE_COLLECTIONS = ['customers', 'drivers', 'rides', 'pendingRequests', 'notifications', 'tickets', 'announcements', 'withdrawals', 'promoCodes'];
   const CONFIG_DOCS = { settings: 'settings', pricing: 'pricing', support: 'support', stats: 'stats' };
 
   function log(...args) {
@@ -278,6 +279,9 @@ const Cloud = (() => {
     wrap('markAllNotificationsRead', (r) => pushMany('notifications', r));
     wrap('addTicket', (r) => push('tickets', r));
     wrap('updateTicket', (r) => push('tickets', r));
+    wrap('replyTicket', (r) => push('tickets', r));
+    wrap('addAnnouncement', (r) => push('announcements', r));
+    wrap('updateAnnouncement', (r) => push('announcements', r));
     wrap('addWithdrawal', (r) => push('withdrawals', r));
     wrap('addPendingRequest', (r) => push('pendingRequests', r));
     wrap('clearPendingRequest', (_r, args) => remove('pendingRequests', args[0]));
